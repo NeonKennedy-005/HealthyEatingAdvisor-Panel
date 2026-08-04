@@ -6,14 +6,14 @@ const TOUR_KEY = 'canvas-tour-seen-launchpad-v1';
 
 const STEPS = [
   {
-    title: 'Welcome to your Career Canvas',
+    title: 'Welcome to your Food Canvas',
     icon: 'flag',
-    body: 'This is your internship-search workspace. Two views — Insights (highlights from your chats) and Workspace (a customizable dashboard of widgets). It starts empty so you can build it the way you want.',
+    body: 'This is your healthy-eating workspace. Two views — Insights (highlights from your chats) and Workspace (a customizable dashboard of widgets). It starts empty so you can build it the way you want.',
   },
   {
     title: 'Add widgets from the palette',
     icon: 'plus',
-    body: `Click "Add widget" on the Workspace view, or hit ${MOD}+K and search. There are 30+ widgets — application boards, deadlines, resume writing, networking logs, plus challenge widgets that push back on weak plans.`,
+    body: `Click "Add widget" on the Workspace view, or hit ${MOD}+K and search. There are 30+ widgets — meal plans, produce trackers, book notes, habit logs, plus challenge widgets that push back on vague goals.`,
   },
   {
     title: 'Make it yours',
@@ -23,7 +23,7 @@ const STEPS = [
   {
     title: 'Try the challenge widgets',
     icon: 'gavel',
-    body: 'Reviewer 2, Devil\'s Advocate, and Scope Realism are tuned to push back, not validate. They\'re where your search plan gets sharpened. Add them when you\'re ready for honest feedback.',
+    body: 'Reviewer 2, Devil\'s Advocate, and Scope Realism are tuned to push back, not validate. They\'re where your food plan gets sharpened. Add them when you\'re ready for honest feedback.',
   },
 ];
 
