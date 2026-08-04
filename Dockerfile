@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1.7
 # ---------------------------------------------------------------------------
-# LaunchPadAI Panel — single-container HuggingFace Spaces image.
+# Healthy Eating Advisor Panel — single-container HuggingFace Spaces image.
 #
 # Mirrors the structural choices used by the working HF Spaces deployments
 # CCAI-Vibe-Demo and CU-Student-AIProject-Helper:
