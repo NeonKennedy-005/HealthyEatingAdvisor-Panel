@@ -1,0 +1,96 @@
+{
+  "authorName": "Heidi Boudro",
+  "panelName": "Healthy Eating Advisor",
+  "purpose": "Introduce easy clean eating and real food.",
+  "advisors": [
+    {
+      "name": "",
+      "role": ""
+    }
+  ],
+  "visionApplicationPurpose": "Introduce easy clean eating and real food.",
+  "visionTargetAudience": "People who want to change or improve their diet",
+  "visionKeyOutcomes": "Change your diet; learn benefits of diet change; find resources to assist you; utilize fruits, vegetables, and superfoods.",
+  "appTitle": "Healthy Eating Advisor",
+  "appSubtitle": "AI-Powered Tips For Clean Eating and Real Food",
+  "primaryBrandColor": "#7C3AED",
+  "logoIcon": "",
+  "footerText": "\u00a9 Heidi Boudro",
+  "headlinePrefix": "Easy Clean Eating with",
+  "headlineHighlight": "Expert AI Advisors",
+  "homepageDescription": "Get personalized guidance on enjoying real food, getting started, fruits and vegetables, easy prep, superfoods, and more! A panel of AI experts will help you achieve your healthy eating goals.",
+  "featuresSectionTitle": "Why Use Healthy Eating Advisor?",
+  "featureCards": [
+    {
+      "title": "All About Food",
+      "icon": "",
+      "description": "Receive friendly tips and easy recommendations from specialized advisors"
+    },
+    {
+      "title": "AI-Powered Insights",
+      "icon": "",
+      "description": "Tips and plans personalized for you and your interests"
+    },
+    {
+      "title": "Available 24/7",
+      "icon": "",
+      "description": "Chat when it's convenient for you"
+    }
+  ],
+  "loginPageSubtitle": "Sign in to get started",
+  "signupPageSubtitle": "Create your account to get personalized guidance",
+  "userInfoRows": [
+    {
+      "infoBoxLabel": "",
+      "dropdownChoices": ""
+    }
+  ],
+  "examplePromptCards": [
+    {
+      "title": "How do I get started?",
+      "icon": "",
+      "prompts": [
+        "I know I'm not eating in a healthy way but I don't know what to do about it.",
+        "What is clean eating?",
+        "How can I get started eating more vegetables?"
+      ]
+    },
+    {
+      "title": "Why healthy eating?",
+      "icon": "",
+      "prompts": [
+        "Is clean eating really more enjoyable?",
+        "How do \"real foods\" improve health?",
+        "What are some benefits of fruit?"
+      ]
+    },
+    {
+      "title": "Easy food prep",
+      "icon": "",
+      "prompts": [
+        "What can I pack for lunch?",
+        "What's an easy superfood?",
+        "What do I do with frozen fruit?"
+      ]
+    },
+    {
+      "title": "The science",
+      "icon": "",
+      "prompts": [
+        "How do you know if a food is nutrient dense?",
+        "Why is processed food such a big problem?",
+        "What does it mean for a food to have high enzymes?"
+      ]
+    }
+  ],
+  "chatInputPlaceholder": "Ask us anything about food!",
+  "sharedBasePrompt": "base_prompt: |\n  **Formatting (Compact Markdown v1):**\n  - Use GitHub-Flavored Markdown.\n  - Output exactly three sections in this order:\n    - `### Thought` -- one sentence that reflects on the user's situation from YOUR perspective.\n    - `### What to do` -- exactly 3 bullets, one line each, with practical actions.\n    - `### Next step` -- one imperative sentence telling the user what to do now.\n  - Use `###` for headings and `-` for bullets.\n  - Insert one blank line between sections.\n  - Keep each section unique and non-repetitive.",
+  "includedPersonaIds": [
+    "eeb55e76-00fd-434e-8901-7576eb63c2bf",
+    "fa5b32a2-9c11-437f-b3a5-af4f56f92740",
+    "39366d96-3bb4-49dd-86b8-0bfb393dd8f9",
+    "b5f13c71-39e3-4f72-9d56-6342bd72badf",
+    "d099d681-2057-4c79-9ed9-5e33bbdad067",
+    "fd23eb19-43d4-4a87-9b00-4f1c6f55ca99"
+  ]
+}

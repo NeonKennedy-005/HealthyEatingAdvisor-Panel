@@ -1,0 +1,4 @@
+[
+  "app/tests/unit/test_account_management.py::TestGuestLogin::test_creates_guest_user_with_valid_email",
+  "app/tests/unit/test_account_management.py::TestGuestLogin::test_legacy_local_guest_email_is_rejected_by_model"
+]

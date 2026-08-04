@@ -1,0 +1,212 @@
+# ============================================================================
+# Healthy Eating Advisor — Application Configuration
+# Author: Heidi Boudro
+# Packaged from advisor-panel-draft + System prompts (July 29 2026)
+# Modeled on LaunchPadAI / CCAI multi-advisor panel pattern
+# ============================================================================
+
+app:
+  title: "Healthy Eating Advisor"
+  subtitle: "AI-Powered Tips For Clean Eating and Real Food"
+  primary_color: "#7C3AED"
+  logo_icon: "Leaf"
+  footer_text: "© Heidi Boudro"
+  user_avatars:
+    - { id: "leaf-violet", icon: "Leaf", color: "#7C3AED", bg: "#F5F3FF" }
+    - { id: "user-emerald", icon: "User", color: "#059669", bg: "#ECFDF5" }
+    - { id: "utensils-amber", icon: "UtensilsCrossed", color: "#D97706", bg: "#FFFBEB" }
+    - { id: "carrot-orange", icon: "Carrot", color: "#EA580C", bg: "#FFF7ED" }
+    - { id: "cherry-rose", icon: "Cherry", color: "#E11D48", bg: "#FFF1F2" }
+    - { id: "book-indigo", icon: "BookOpen", color: "#4F46E5", bg: "#EEF2FF" }
+    - { id: "flask-cyan", icon: "FlaskConical", color: "#0891B2", bg: "#ECFEFF" }
+    - { id: "spark-lime", icon: "Sparkles", color: "#65A30D", bg: "#F7FEE7" }
+
+homepage:
+  headline_prefix: "Easy Clean Eating with"
+  headline_highlight: "Expert AI Advisors"
+  description: >-
+    Get personalized guidance on enjoying real food, getting started, fruits
+    and vegetables, easy prep, superfoods, and more! A panel of AI experts will
+    help you achieve your healthy eating goals.
+  features_title: "Why Use Healthy Eating Advisor?"
+  features:
+    - title: "All About Food"
+      description: "Receive friendly tips and easy recommendations from specialized advisors"
+      icon: "UtensilsCrossed"
+    - title: "AI-Powered Insights"
+      description: "Tips and plans personalized for you and your interests"
+      icon: "Sparkles"
+    - title: "Available 24/7"
+      description: "Chat when it's convenient for you"
+      icon: "MessagesSquare"
+
+login:
+  subtitle: "Sign in to get started"
+  signup_subtitle: "Create your account to get personalized guidance"
+  knowledge_levels:
+    - { value: "", label: "Where are you on healthy eating?" }
+    - { value: "just_starting", label: "Just starting out" }
+    - { value: "some_changes", label: "Making some changes already" }
+    - { value: "experienced", label: "Experienced / refining habits" }
+    - { value: "curious", label: "Curious / exploring ideas" }
+  timezones:
+    - { value: "", label: "Select timezone (optional)" }
+    - { value: "America/New_York", label: "Eastern (US)" }
+    - { value: "America/Chicago", label: "Central (US)" }
+    - { value: "America/Denver", label: "Mountain (US)" }
+    - { value: "America/Los_Angeles", label: "Pacific (US)" }
+    - { value: "America/Anchorage", label: "Alaska (US)" }
+    - { value: "Pacific/Honolulu", label: "Hawaii (US)" }
+    - { value: "UTC", label: "UTC" }
+  academic_stages:
+    - { value: "", label: "Where are you on healthy eating?" }
+    - { value: "just_starting", label: "Just starting out" }
+    - { value: "some_changes", label: "Making some changes already" }
+    - { value: "experienced", label: "Experienced / refining habits" }
+    - { value: "curious", label: "Curious / exploring ideas" }
+
+chat_page:
+  placeholder: "Ask us anything about food!"
+  examples:
+    - title: "How do I get started?"
+      icon: "Leaf"
+      color: "#7C3AED"
+      bg_color: "#F5F3FF"
+      suggestions:
+        - "I know I'm not eating in a healthy way but I don't know what to do about it."
+        - "What is clean eating?"
+        - "How can I get started eating more vegetables?"
+    - title: "Why healthy eating?"
+      icon: "Heart"
+      color: "#E11D48"
+      bg_color: "#FFF1F2"
+      suggestions:
+        - "Is clean eating really more enjoyable?"
+        - "How do real foods improve health?"
+        - "What are some benefits of fruit?"
+    - title: "Easy food prep"
+      icon: "UtensilsCrossed"
+      color: "#D97706"
+      bg_color: "#FFFBEB"
+      suggestions:
+        - "What can I pack for lunch?"
+        - "What's an easy superfood?"
+        - "What do I do with frozen fruit?"
+    - title: "The science"
+      icon: "FlaskConical"
+      color: "#0891B2"
+      bg_color: "#ECFEFF"
+      suggestions:
+        - "How do you know if a food is nutrient dense?"
+        - "Why is processed food such a big problem?"
+        - "What does it mean for a food to have high enzymes?"
+
+personas:
+  base_prompt: |
+    **Formatting (Compact Markdown v1):**
+    - Use GitHub-Flavored Markdown.
+    - Output exactly three sections in this order:
+      - `### Thought` -- one sentence that reflects on the user's situation from YOUR perspective.
+      - `### What to do` -- exactly 3 bullets, one line each, with practical actions.
+      - `### Next step` -- one imperative sentence telling the user what to do now.
+    - Use `###` for headings and `-` for bullets.
+    - Insert one blank line between sections.
+    - Keep each section unique and non-repetitive.
+
+    **Domain (Healthy Eating Advisor by Heidi Boudro):**
+    - Mission: introduce easy clean eating and real food.
+    - Audience: people who want to change or improve their diet.
+    - Prefer practical, nonjudgmental, encouraging guidance.
+    - Use the knowledge pack under knowledge/ when relevant; treat references as perspective-setting, not medical authority.
+    - Educational wellness coaching only — not diagnosis, prescription, or replacement for professional care.
+    - When USER PROFILE is present, personalize to goals, constraints, and preferences.
+  personas_dir: "personas/healthy_eating_advisors"
+
+orchestrator:
+  min_words_without_keywords: 6
+  conversation_history_token_threshold: 4000
+  specific_keywords:
+    - "clean eating"
+    - "whole food"
+    - "processed"
+    - "vegetable"
+    - "veggie"
+    - "fruit"
+    - "superfood"
+    - "enzyme"
+    - "digestive"
+    - "cookbook"
+    - "book"
+    - "sugar"
+    - "salt"
+    - "fat"
+    - "juice"
+    - "recipe"
+    - "meal prep"
+    - "lunch"
+    - "snack"
+    - "turmeric"
+    - "ginger"
+    - "wheatgrass"
+    - "protein"
+    - "diet"
+    - "nutrition"
+    - "organic"
+    - "raw"
+    - "fermented"
+  clarification_questions:
+    - "What would you like to change or improve about how you eat?"
+    - "Do you prefer guidance on fruits, vegetables, superfoods, prep habits, enzymes, or books/resources?"
+    - "Any allergies, dietary preferences, time limits, or kitchen constraints we should respect?"
+    - "Are you looking for a simple next step, a short plan, or a deeper explanation?"
+  clarification_suggestions:
+    - "Ask Kitchen Coach what clean eating means for beginners"
+    - "Ask Veggie Chef for an easy vegetable recipe"
+    - "Ask Fruit Maven for fruit ideas and juice tips"
+    - "Ask Superfoods Superman for one easy superfood to try"
+    - "Ask Enzyme Explorer what digestive enzymes are"
+    - "Ask Book Advisor for a starter healthy-eating book"
+
+auth:
+  algorithm: "HS256"
+  token_expiry_minutes: 43200
+
+mongodb:
+  database_name: "healthy_eating_advisor"
+
+llm:
+  provider: "openai"
+  gemini:
+    model: "gemini-2.5-flash"
+  ollama:
+    model: "llama3.2:1b"
+  vllm:
+    api_url: ""
+    api_key: ""
+    api_username: "guest"
+    model_id: ""
+    neon_persona_orchestrator: "vanilla"
+    neon_persona_advisors: "vanilla"
+  openai:
+    # Key comes from the OPENAI_API_KEY env var / HF Space secret (never committed).
+    api_key: ""
+    model: "gpt-5.4-mini"
+    orchestrator_reasoning_effort: "low"
+    persona_reasoning_effort: "none"
+  resilient:
+    race_timeout_seconds: 60
+
+rag:
+  embedding_model: "all-MiniLM-L6-v2"
+  chroma_collection: "healthy_eating_documents"
+
+tools:
+  current_datetime:
+    enabled: true
+    default_timezone: "America/Denver"
+  nutrition_calculator:
+    enabled: false
+
+voice:
+  stt_endpoint: "https://whisper.neonaiservices.com"
+  tts_endpoint: "https://coqui.neonaiservices.com"

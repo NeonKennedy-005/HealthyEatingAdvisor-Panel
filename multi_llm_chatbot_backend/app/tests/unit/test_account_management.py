@@ -1,0 +1,302 @@
+import asyncio
+import unittest
+from datetime import datetime
+from unittest.mock import AsyncMock, MagicMock, patch
+
+from bson import ObjectId
+from fastapi import HTTPException
+from pydantic import ValidationError
+
+# Heavy modules pulled in transitively by ``app.api.routes.auth`` are
+# stubbed once for the whole test session in ``conftest.py``; the import
+# below relies on those stubs already being in place.
+from app.api.routes.auth import (  # noqa: E402
+    ChangePasswordRequest,
+    DeleteAccountRequest,
+    UpdateProfileRequest,
+    change_password,
+    delete_account,
+    guest_login,
+    update_profile,
+)
+from app.models.user import User  # noqa: E402
+
+
+FAKE_USER_ID = ObjectId()
+
+
+def _make_fake_user(**overrides):
+    defaults = dict(
+        _id=FAKE_USER_ID,
+        firstName="Test",
+        lastName="User",
+        email="test@example.com",
+        hashed_password="$2b$12$fakehash",
+        is_active=True,
+        created_at=datetime(2025, 1, 1),
+    )
+    defaults.update(overrides)
+    return User(**defaults)
+
+
+def _mock_db():
+    db = MagicMock()
+    db.users.update_one = AsyncMock()
+    db.users.delete_one = AsyncMock()
+    db.users.find_one = AsyncMock()
+    db.chat_sessions.delete_many = AsyncMock()
+    db.phd_canvases.delete_many = AsyncMock()
+    return db
+
+
+# ------------------------------------------------------------------
+# POST /auth/me/password
+# ------------------------------------------------------------------
+
+
+@patch("app.api.routes.auth.get_database")
+@patch("app.api.routes.auth.get_password_hash", return_value="new_hashed")
+@patch("app.api.routes.auth.verify_password")
+class TestChangePassword(unittest.TestCase):
+
+    def test_success(self, mock_verify, mock_hash, mock_get_db):
+        mock_verify.return_value = True
+        db = _mock_db()
+        mock_get_db.return_value = db
+
+        user = _make_fake_user()
+        body = ChangePasswordRequest(
+            current_password="old", new_password="newsecure",
+        )
+
+        result = asyncio.run(change_password(body=body, current_user=user))
+
+        mock_verify.assert_called_once_with("old", user.hashed_password)
+        mock_hash.assert_called_once_with("newsecure")
+        db.users.update_one.assert_called_once_with(
+            {"_id": user.id},
+            {"$set": {"hashed_password": "new_hashed"}},
+        )
+        self.assertEqual(result.message, "Password changed successfully")
+
+    def test_wrong_current_password(self, mock_verify, mock_hash, mock_get_db):
+        mock_verify.return_value = False
+
+        user = _make_fake_user()
+        body = ChangePasswordRequest(
+            current_password="wrong", new_password="newsecure",
+        )
+
+        with self.assertRaises(HTTPException) as ctx:
+            asyncio.run(change_password(body=body, current_user=user))
+
+        self.assertEqual(ctx.exception.status_code, 400)
+        self.assertIn("incorrect", ctx.exception.detail.lower())
+
+    def test_new_password_too_short(self, mock_verify, mock_hash, mock_get_db):
+        mock_verify.return_value = True
+
+        user = _make_fake_user()
+        body = ChangePasswordRequest(
+            current_password="old", new_password="short",
+        )
+
+        with self.assertRaises(HTTPException) as ctx:
+            asyncio.run(change_password(body=body, current_user=user))
+
+        self.assertEqual(ctx.exception.status_code, 400)
+        self.assertIn("8 characters", ctx.exception.detail)
+
+    def test_db_not_called_on_wrong_password(self, mock_verify, mock_hash, mock_get_db):
+        mock_verify.return_value = False
+        db = _mock_db()
+        mock_get_db.return_value = db
+
+        user = _make_fake_user()
+        body = ChangePasswordRequest(
+            current_password="wrong", new_password="newsecure",
+        )
+
+        with self.assertRaises(HTTPException):
+            asyncio.run(change_password(body=body, current_user=user))
+
+        db.users.update_one.assert_not_called()
+
+    def test_same_password_rejected(self, mock_verify, mock_hash, mock_get_db):
+        with self.assertRaises(ValidationError) as ctx:
+            ChangePasswordRequest(
+                current_password="samepass", new_password="samepass",
+            )
+
+        self.assertIn("different", str(ctx.exception).lower())
+
+
+# ------------------------------------------------------------------
+# PATCH /auth/me
+# ------------------------------------------------------------------
+
+
+@patch("app.api.routes.auth.get_database")
+class TestUpdateProfile(unittest.TestCase):
+
+    def test_update_first_name(self, mock_get_db):
+        user = _make_fake_user()
+        updated_doc = {**user.model_dump(by_alias=True), "firstName": "Alice"}
+        db = _mock_db()
+        db.users.find_one = AsyncMock(return_value=updated_doc)
+        mock_get_db.return_value = db
+
+        body = UpdateProfileRequest(first_name="Alice")
+        result = asyncio.run(update_profile(body=body, current_user=user))
+
+        db.users.update_one.assert_called_once_with(
+            {"_id": user.id},
+            {"$set": {"firstName": "Alice"}},
+        )
+        self.assertEqual(result.firstName, "Alice")
+
+    def test_update_both_names(self, mock_get_db):
+        user = _make_fake_user()
+        updated_doc = {
+            **user.model_dump(by_alias=True),
+            "firstName": "Alice",
+            "lastName": "Smith",
+        }
+        db = _mock_db()
+        db.users.find_one = AsyncMock(return_value=updated_doc)
+        mock_get_db.return_value = db
+
+        body = UpdateProfileRequest(first_name="Alice", last_name="Smith")
+        result = asyncio.run(update_profile(body=body, current_user=user))
+
+        db.users.update_one.assert_called_once_with(
+            {"_id": user.id},
+            {"$set": {"firstName": "Alice", "lastName": "Smith"}},
+        )
+        self.assertEqual(result.firstName, "Alice")
+        self.assertEqual(result.lastName, "Smith")
+
+    def test_empty_body_rejected(self, mock_get_db):
+        with self.assertRaises(ValidationError) as ctx:
+            UpdateProfileRequest()
+
+        self.assertIn("at least one field", str(ctx.exception).lower())
+
+    def test_strips_whitespace(self, mock_get_db):
+        user = _make_fake_user()
+        updated_doc = {**user.model_dump(by_alias=True), "firstName": "Alice"}
+        db = _mock_db()
+        db.users.find_one = AsyncMock(return_value=updated_doc)
+        mock_get_db.return_value = db
+
+        body = UpdateProfileRequest(first_name="  Alice  ")
+        self.assertEqual(body.first_name, "Alice")
+
+        asyncio.run(update_profile(body=body, current_user=user))
+
+        db.users.update_one.assert_called_once_with(
+            {"_id": user.id},
+            {"$set": {"firstName": "Alice"}},
+        )
+
+    def test_whitespace_only_body_rejected(self, mock_get_db):
+        with self.assertRaises(ValidationError) as ctx:
+            UpdateProfileRequest(first_name="   ")
+
+        self.assertIn("at least one field", str(ctx.exception).lower())
+
+
+# ------------------------------------------------------------------
+# POST /auth/guest
+# ------------------------------------------------------------------
+
+
+@patch("app.api.routes.auth.create_access_token", return_value="guest-token")
+@patch("app.api.routes.auth.get_password_hash", return_value="hashed")
+@patch("app.api.routes.auth.get_database")
+class TestGuestLogin(unittest.TestCase):
+
+    def test_creates_guest_user_with_valid_email(self, mock_get_db, _hash, _token):
+        db = _mock_db()
+        db.users.insert_one = AsyncMock(return_value=MagicMock(inserted_id=FAKE_USER_ID))
+        db.user_profiles = MagicMock()
+        db.user_profiles.update_one = AsyncMock()
+        mock_get_db.return_value = db
+
+        result = asyncio.run(guest_login())
+
+        self.assertEqual(result.access_token, "guest-token")
+        self.assertEqual(result.token_type, "bearer")
+        self.assertTrue(result.user.is_guest)
+        self.assertTrue(result.user.email.endswith("@guests.healthyeating.ai"))
+        self.assertFalse(result.user.email.endswith(".local"))
+        db.users.insert_one.assert_called_once()
+        inserted = db.users.insert_one.call_args.args[0]
+        self.assertTrue(inserted.get("is_guest"))
+        self.assertTrue(str(inserted.get("email", "")).endswith("@guests.healthyeating.ai"))
+
+    def test_legacy_local_guest_email_is_rejected_by_model(self, *_mocks):
+        """Regression: EmailStr must not accept reserved .local guest addresses."""
+        with self.assertRaises(ValidationError):
+            User(
+                firstName="Guest",
+                lastName="Explorer",
+                email="guest-abc@guest.healthyeating.local",
+                hashed_password="x",
+                is_guest=True,
+            )
+
+
+# ------------------------------------------------------------------
+# DELETE /auth/me
+# ------------------------------------------------------------------
+
+
+@patch("app.api.routes.auth.get_database")
+@patch("app.api.routes.auth.verify_password")
+class TestDeleteAccount(unittest.TestCase):
+
+    def test_success(self, mock_verify, mock_get_db):
+        mock_verify.return_value = True
+        db = _mock_db()
+        mock_get_db.return_value = db
+
+        user = _make_fake_user()
+        body = DeleteAccountRequest(password="correct")
+
+        result = asyncio.run(delete_account(body=body, current_user=user))
+
+        mock_verify.assert_called_once_with("correct", user.hashed_password)
+        db.chat_sessions.delete_many.assert_called_once_with({"user_id": user.id})
+        db.phd_canvases.delete_many.assert_called_once_with({"user_id": user.id})
+        db.users.delete_one.assert_called_once_with({"_id": user.id})
+        self.assertEqual(result.message, "Account deleted")
+
+    def test_wrong_password(self, mock_verify, mock_get_db):
+        mock_verify.return_value = False
+        db = _mock_db()
+        mock_get_db.return_value = db
+
+        user = _make_fake_user()
+        body = DeleteAccountRequest(password="wrong")
+
+        with self.assertRaises(HTTPException) as ctx:
+            asyncio.run(delete_account(body=body, current_user=user))
+
+        self.assertEqual(ctx.exception.status_code, 400)
+        self.assertIn("Incorrect password", ctx.exception.detail)
+
+    def test_no_deletion_on_wrong_password(self, mock_verify, mock_get_db):
+        mock_verify.return_value = False
+        db = _mock_db()
+        mock_get_db.return_value = db
+
+        user = _make_fake_user()
+        body = DeleteAccountRequest(password="wrong")
+
+        with self.assertRaises(HTTPException):
+            asyncio.run(delete_account(body=body, current_user=user))
+
+        db.users.delete_one.assert_not_called()
+        db.chat_sessions.delete_many.assert_not_called()
+        db.phd_canvases.delete_many.assert_not_called()
