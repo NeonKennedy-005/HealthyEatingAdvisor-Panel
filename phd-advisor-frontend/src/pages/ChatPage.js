@@ -68,6 +68,7 @@ const ChatPage = ({ user, authToken, onNavigateToHome, onNavigateToCanvas, onSig
   const [userProfile, setUserProfile] = useState(null);
   const [profileLoaded, setProfileLoaded] = useState(false);
   const [showSearchPathGate, setShowSearchPathGate] = useState(false);
+  const [synthesizedMode, setSynthesizedMode] = useState(false);
 
   const loadProfile = async () => {
     try {
@@ -77,12 +78,13 @@ const ChatPage = ({ user, authToken, onNavigateToHome, onNavigateToCanvas, onSig
       if (resp.ok) {
         const profile = await resp.json();
         setUserProfile(profile);
+        // Only show the focus gate once — needsSearchPath also honors localStorage
         setShowSearchPathGate(needsSearchPath(profile));
       } else {
-        setShowSearchPathGate(true);
+        setShowSearchPathGate(needsSearchPath(null));
       }
     } catch (e) {
-      setShowSearchPathGate(true);
+      setShowSearchPathGate(needsSearchPath(null));
     } finally {
       setProfileLoaded(true);
     }
@@ -557,6 +559,7 @@ const handleNewChat = async (sessionId = null) => {
           response_length: 'medium',
           chat_session_id: sessionId,
           active_advisors: advisorsForRequest,
+          response_mode: synthesizedMode ? 'aggregate' : 'panel',
         }),
       });
 
@@ -1120,9 +1123,11 @@ const handleNewChat = async (sessionId = null) => {
               isLoading={isLoading || showSearchPathGate}
               currentChatSessionId={currentSessionId}
               authToken={authToken}
+              synthesizedMode={synthesizedMode}
+              onToggleSynthesized={() => setSynthesizedMode((prev) => !prev)}
               placeholder={
                 showSearchPathGate
-                  ? 'Choose internship or full-time above to start…'
+                  ? 'Choose a focus above to start…'
                   : replyingTo 
                   ? `Reply to ${replyingTo.advisorName}...`
                   : chatPlaceholder
@@ -1144,7 +1149,7 @@ const handleNewChat = async (sessionId = null) => {
         <SearchPathGate
           authToken={authToken}
           onComplete={(profile) => {
-            setUserProfile(profile);
+            if (profile) setUserProfile(profile);
             setShowSearchPathGate(false);
           }}
         />

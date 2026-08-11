@@ -45,7 +45,9 @@ async def _attach_user_profile_context(session, user: User) -> None:
                 parts.append(f"{label}: {val}")
         if parts:
             session.user_profile_context = (
-                "USER CAREER PROFILE (personalize advice; never invent facts): "
+                "USER BACKGROUND (use lightly for tone/depth only; never invent facts; "
+                "do NOT fixate on any single preference, allergy, or constraint unless "
+                "the user asks about it this turn): "
                 + "; ".join(parts)
             )
     except Exception as prof_err:
@@ -61,6 +63,8 @@ class ChatMessage(BaseModel):
     chat_session_id: Optional[str] = None  # MongoDB chat session ID
     response_length: str = "medium"
     active_advisors: Optional[List[str]] = None
+    # panel = each selected advisor replies; aggregate = one combined answer
+    response_mode: Literal["panel", "aggregate"] = "panel"
 
 class ReplyToAdvisor(BaseModel):
     user_input: str
@@ -175,10 +179,9 @@ async def chat_stream(
                 ).to_ndjson()
                 return
 
-            # Always relevance-rank to the top 3 advisors, scoped to the
-            # user's active-advisor selection (the header dropdown) when one is
-            # provided. The dropdown filters the candidate pool; the LLM
-            # ranking still picks the top 3 from that pool.
+            # Respond with every active advisor (relevance-ordered). The old
+            # hard top-3 cut made "chat with all" return only the first three
+            # alphabetically when ranking fell back.
             if message.active_advisors:
                 candidate_ids = [
                     pid for pid in message.active_advisors
@@ -186,11 +189,16 @@ async def chat_stream(
                 ]
             else:
                 candidate_ids = list(chat_orchestrator.personas.keys())
+            if not candidate_ids:
+                candidate_ids = list(chat_orchestrator.personas.keys())
+
             top_personas = await chat_orchestrator.get_top_personas(
                 session_id=sid,
-                k=3,
+                k=len(candidate_ids),
                 candidate_ids=candidate_ids,
             )
+
+            aggregate_mode = (message.response_mode or "panel") == "aggregate"
 
             # Tell the client which advisors will respond so it can show
             # thinking indicators for just those, not the entire active pool.
@@ -198,7 +206,10 @@ async def chat_stream(
                 type="progress",
                 data={
                     "phase": "selected",
-                    "selected_advisors": top_personas,
+                    "selected_advisors": (
+                        ["aggregate"] if aggregate_mode else top_personas
+                    ),
+                    "response_mode": "aggregate" if aggregate_mode else "panel",
                 },
             ).to_ndjson()
 
@@ -226,22 +237,60 @@ async def chat_stream(
                     })
 
             tasks = [asyncio.create_task(_run(pid)) for pid in top_personas]
+            collected: List[Dict[str, Any]] = []
 
             for _ in range(len(tasks)):
                 result = await done_queue.get()
-                line = ChatStreamLine(
-                    type="advisor",
-                    data={
-                        "persona_id": result["persona_id"],
-                        "persona_name": result["persona_name"],
-                        "content": result["response"],
-                        "used_documents": result.get("used_documents", False),
-                        "document_chunks_used": result.get("document_chunks_used", 0),
-                    },
-                )
-                yield line.to_ndjson()
+                collected.append(result)
+                if not aggregate_mode:
+                    line = ChatStreamLine(
+                        type="advisor",
+                        data={
+                            "persona_id": result["persona_id"],
+                            "persona_name": result["persona_name"],
+                            "content": result["response"],
+                            "used_documents": result.get("used_documents", False),
+                            "document_chunks_used": result.get("document_chunks_used", 0),
+                        },
+                    )
+                    yield line.to_ndjson()
 
             await asyncio.gather(*tasks, return_exceptions=True)
+
+            if aggregate_mode and collected:
+                try:
+                    blended = await chat_orchestrator.synthesize_aggregate_response(
+                        user_input=message.user_input,
+                        advisor_results=collected,
+                    )
+                except Exception as synth_err:
+                    logger.exception(f"aggregate synthesize failed: {synth_err}")
+                    parts = [
+                        f"**{r.get('persona_name', r.get('persona_id'))}:** "
+                        f"{(r.get('response') or '')[:400]}"
+                        for r in collected
+                    ]
+                    blended = (
+                        "### Thought\n"
+                        "- Combining the panel's specialty notes for you.\n\n"
+                        "### What to do\n"
+                        + "\n".join(f"- {p}" for p in parts[:3])
+                        + "\n\n### Next step\n"
+                        "- Ask any one advisor to go deeper on the point you care about most."
+                    )
+                session.append_message("aggregate", blended)
+                used_docs = any(r.get("used_documents") for r in collected)
+                chunks = sum(int(r.get("document_chunks_used") or 0) for r in collected)
+                yield ChatStreamLine(
+                    type="advisor",
+                    data={
+                        "persona_id": "aggregate",
+                        "persona_name": "All Advisors (combined)",
+                        "content": blended,
+                        "used_documents": used_docs,
+                        "document_chunks_used": chunks,
+                    },
+                ).to_ndjson()
 
             yield ChatStreamLine(
                 type="progress",

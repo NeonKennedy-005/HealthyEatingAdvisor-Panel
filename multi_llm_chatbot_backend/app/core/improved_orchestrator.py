@@ -583,27 +583,17 @@ class ImprovedChatOrchestrator:
                 for doc in doc_stats['documents']:
                     logger.info(f"  - Document: {doc.get('filename', 'unknown')} ({doc.get('chunks', 0)} chunks)")
             
-            # If no documents found and this looks like a chat session, log warning
+            # Session may have zero uploads; still search the bundled knowledge pack.
             if doc_stats.get('total_documents', 0) == 0:
                 if session_id.startswith('chat_'):
-                    logger.warning(f"No documents found for chat session {session_id} - this may indicate session ID mismatch during upload")
-                    
-                    # Try alternative session ID formats for debugging
-                    alternative_formats = [
-                        session_id.replace('chat_', ''),  # Remove chat_ prefix
-                        session_id,  # Keep as is
-                    ]
-                    
-                    for alt_session_id in alternative_formats:
-                        if alt_session_id != session_id:
-                            alt_stats = rag_manager.get_document_stats(alt_session_id)
-                            if alt_stats.get('total_documents', 0) > 0:
-                                logger.warning(f"Found documents under alternative session ID {alt_session_id}: {alt_stats}")
+                    logger.info(
+                        f"No user uploads for {session_id}; will still search bundled knowledge pack"
+                    )
                 else:
-                    logger.info(f"No documents found for new session {session_id} - this is normal for new chats")
-                
-                return ""  # No documents available
-            
+                    logger.info(
+                        f"No user uploads for session {session_id}; searching bundled knowledge pack"
+                    )
+
             # Extract document hints from user query
             document_hint = self._extract_document_hint_from_query(user_input)
             logger.info(f"Document hint extracted from query: {document_hint}")
@@ -803,37 +793,40 @@ When analyzing the document context:
         if has_documents:
             # Get list of uploaded documents
             uploaded_docs = session.uploaded_files if hasattr(session, 'uploaded_files') else []
-            doc_list = ", ".join(uploaded_docs) if uploaded_docs else "uploaded documents"
+            doc_list = (
+                ", ".join(uploaded_docs)
+                if uploaded_docs
+                else "bundled healthy-eating reference materials"
+            )
             
             system_message = f"""{persona.system_prompt}
 
     CURRENT SESSION CONTEXT:
-    The user has uploaded the following documents: {doc_list}
+    Available reference materials: {doc_list}
 
     DOCUMENT CONTENT:
     {document_context}
 
-    IMPORTANT: When the user refers to "my document," "my plan," "my program," etc., they are referring to one of their uploaded documents. Use the document context above to understand which specific document they mean and reference it by name in your response.
+    IMPORTANT: Use the reference materials above when relevant. Prefer Heidi's healthy-eating notes and any user uploads. Cite sources by filename when you rely on them.
 
     Always cite your sources when referencing information from their documents using the format: "According to your [document_name]..." or "In your [section_name] from [document_name]..."
     """
         else:
-            # NO DOCUMENTS - Explicitly tell persona not to reference documents
+            # NO RETRIEVED CHUNKS - stay general, still in specialty
             system_message = f"""{persona.system_prompt}
 
-    IMPORTANT: The user has NOT uploaded any documents yet. Do not reference any specific documents, files, or assume you have access to their materials.
+    IMPORTANT: No specific document chunks were retrieved for this turn. Stay in your specialty and give practical educational guidance. Do not invent document names.
 
     If they mention "my document," "my plan," "my program," etc., you should:
-    1. Acknowledge that you don't have access to their specific documents
-    2. Ask them to upload the relevant files for more targeted advice
-    3. Provide general guidance based on best practices in your area of expertise
-
-    Do NOT make up document names or pretend to have access to files that don't exist."""
+    1. Acknowledge that you don't have their personal file in context
+    2. Invite them to upload the file for more targeted advice
+    3. Still provide general specialty guidance"""
 
         if hasattr(session, "user_profile_context") and session.user_profile_context:
             system_message += (
                 f"\n\n{session.user_profile_context}\n"
-                "Use this background to calibrate technical depth, examples, and priorities."
+                "Use this background lightly to calibrate depth only. "
+                "Stay in your specialty. Do not let any single profile detail dominate."
             )
 
         computed_nutrition = compute_protein_advisory_context(conversation_messages)
@@ -1106,14 +1099,144 @@ When analyzing the document context:
 
             if len(valid_ids) < k:
                 logger.warning(f"LLM returned insufficient or invalid IDs. Got: {valid_ids}")
-                return list(candidate_personas.keys())[:k]
+                ranked = self._rank_personas_by_keywords(
+                    recent_context, list(candidate_personas.keys())
+                )
+                for pid in ranked:
+                    if pid not in valid_ids:
+                        valid_ids.append(pid)
+                    if len(valid_ids) >= k:
+                        break
 
             return valid_ids[:k]
 
         except Exception as e:
             logger.error(f"Error selecting top personas: {e}")
-            if candidate_ids:
-                fallback_ids = [pid for pid in candidate_ids if pid in self.personas]
-                if fallback_ids:
-                    return fallback_ids[:k]
-            return list(self.personas.keys())[:k]
+            pool = (
+                [pid for pid in candidate_ids if pid in self.personas]
+                if candidate_ids
+                else list(self.personas.keys())
+            )
+            session = self.session_manager.get_session(session_id)
+            recent = ""
+            if session:
+                recent = "\n".join(
+                    msg["content"] for msg in session.get_recent_messages(5)
+                )
+            return self._rank_personas_by_keywords(recent, pool)[:k]
+
+    def _rank_personas_by_keywords(
+        self, recent_context: str, candidate_ids: List[str]
+    ) -> List[str]:
+        """Relevance fallback that must never collapse to alphabetical order."""
+        text = (recent_context or "").lower()
+        keyword_map = {
+            "kitchen_coach": [
+                "clean eating", "whole food", "processed", "sugar", "salt",
+                "habit", "meal prep", "lunch", "start", "begin", "diet",
+            ],
+            "veggie_chef": [
+                "vegetable", "veggie", "broccoli", "carrot", "brassica",
+                "nightshade", "steam", "salad", "greens",
+            ],
+            "fruit_maven": [
+                "fruit", "juice", "berry", "blueberry", "pomegranate",
+                "banana", "apple", "citrus", "plantain",
+            ],
+            "superfoods_superman": [
+                "superfood", "ginger", "turmeric", "coconut", "fish oil",
+                "wheatgrass", "whey", "concentrated",
+            ],
+            "enzyme_explorer": [
+                "enzyme", "digestive", "protease", "amylase", "lipase",
+                "lactase", "raw food", "fermented",
+            ],
+            "book_advisor": [
+                "book", "cookbook", "read", "author", "recommend a book",
+                "reading", "library",
+            ],
+        }
+        scored = []
+        for pid in candidate_ids:
+            if pid not in self.personas:
+                continue
+            score = 0
+            for kw in keyword_map.get(pid, []):
+                if kw in text:
+                    score += 2 if " " in kw else 1
+            # Prefer configured registration order (sort_order) as a light tiebreak
+            # rather than alphabetical filename order.
+            reg_index = list(self.personas.keys()).index(pid) if pid in self.personas else 99
+            scored.append((score, -reg_index, pid))
+        scored.sort(reverse=True)
+        return [pid for _, _, pid in scored]
+
+    async def synthesize_aggregate_response(
+        self,
+        user_input: str,
+        advisor_results: List[Dict[str, Any]],
+    ) -> str:
+        """Blend specialty answers into one Heidi-aligned combined reply."""
+        if not advisor_results:
+            return (
+                "### Thought\n"
+                "- The panel did not return notes to combine.\n\n"
+                "### What to do\n"
+                "- Ask again with a bit more detail.\n"
+                "- Try Panel mode to hear each advisor.\n"
+                "- Or select specific advisors in the header.\n\n"
+                "### Next step\n"
+                "- Send your question once more."
+            )
+
+        notes = []
+        for r in advisor_results:
+            name = r.get("persona_name") or r.get("persona_id") or "Advisor"
+            body = (r.get("response") or "").strip()
+            if body:
+                notes.append(f"[{name}]\n{body}")
+        joined = "\n\n".join(notes)
+
+        llm = self.llm_client
+        if llm is None and self.personas:
+            llm = next(iter(self.personas.values())).llm
+        if llm is None:
+            # Deterministic fallback without an LLM
+            bullets = []
+            for r in advisor_results[:3]:
+                name = r.get("persona_name") or r.get("persona_id")
+                snippet = (r.get("response") or "").replace("\n", " ")[:140]
+                bullets.append(f"- From {name}: {snippet}")
+            return (
+                "### Thought\n"
+                "- Combining the advisors' specialty notes for a single next step.\n\n"
+                "### What to do\n"
+                + "\n".join(bullets)
+                + "\n\n### Next step\n"
+                "- Pick one specialty above and ask that advisor to go deeper."
+            )
+
+        prompt = f"""
+You are combining Healthy Eating Advisor specialty answers into ONE helpful reply
+in Heidi Boudro's friendly, practical clean-eating spirit.
+
+User question:
+{user_input}
+
+Advisor notes:
+{joined}
+
+Rules:
+- Use Compact Markdown with exactly ### Thought, ### What to do (3 bullets), ### Next step.
+- Stay encouraging and practical — never snarky.
+- Preserve distinct specialties (foods / produce / superfoods / enzymes / books) without generic fluff.
+- Do not invent medical claims.
+""".strip()
+
+        blended = await llm.generate(
+            system_prompt="You synthesize multi-advisor healthy-eating guidance.",
+            context=[{"role": "user", "content": prompt}],
+            temperature=0.3,
+            max_tokens=700,
+        )
+        return (blended or "").strip()

@@ -25,16 +25,16 @@ homepage:
   headline_prefix: "Easy Clean Eating with"
   headline_highlight: "Expert AI Advisors"
   description: >-
-    Get personalized guidance on enjoying real food, getting started, fruits
-    and vegetables, easy prep, superfoods, and more! A panel of AI experts will
-    help you achieve your healthy eating goals.
+    Friendly, practical guidance for enjoying real food — getting started,
+    fruits and vegetables, simple prep, superfoods, enzymes, and good books.
+    Ask Heidi's specialist advisors for tips you can use today.
   features_title: "Why Use Healthy Eating Advisor?"
   features:
     - title: "All About Food"
-      description: "Receive friendly tips and easy recommendations from specialized advisors"
+      description: "Friendly tips from specialists who each stay in their own lane"
       icon: "UtensilsCrossed"
-    - title: "AI-Powered Insights"
-      description: "Tips and plans personalized for you and your interests"
+    - title: "Practical Next Steps"
+      description: "Simple ideas for clean eating and real food — without overwhelm"
       icon: "Sparkles"
     - title: "Available 24/7"
       description: "Chat when it's convenient for you"
@@ -68,58 +68,60 @@ login:
 chat_page:
   placeholder: "Ask us anything about food!"
   examples:
-    - title: "How do I get started?"
+    - title: "Foods"
       icon: "Leaf"
-      color: "#7C3AED"
-      bg_color: "#F5F3FF"
+      color: "#059669"
+      bg_color: "#ECFDF5"
       suggestions:
-        - "I know I'm not eating in a healthy way but I don't know what to do about it."
         - "What is clean eating?"
         - "How can I get started eating more vegetables?"
-    - title: "Why healthy eating?"
-      icon: "Heart"
-      color: "#E11D48"
-      bg_color: "#FFF1F2"
-      suggestions:
-        - "Is clean eating really more enjoyable?"
-        - "How do real foods improve health?"
-        - "What are some benefits of fruit?"
-    - title: "Easy food prep"
-      icon: "UtensilsCrossed"
+        - "What can I pack for lunch?"
+    - title: "Supplements"
+      icon: "Pill"
       color: "#D97706"
       bg_color: "#FFFBEB"
       suggestions:
-        - "What can I pack for lunch?"
         - "What's an easy superfood?"
-        - "What do I do with frozen fruit?"
-    - title: "The science"
-      icon: "FlaskConical"
-      color: "#0891B2"
-      bg_color: "#ECFEFF"
-      suggestions:
-        - "How do you know if a food is nutrient dense?"
-        - "Why is processed food such a big problem?"
         - "What does it mean for a food to have high enzymes?"
+        - "Which healthy-eating book should I start with?"
+    - title: "New advisee intake"
+      icon: "ClipboardList"
+      color: "#2563EB"
+      bg_color: "#EFF6FF"
+      suggestions:
+        - "New advisee intake — please ask about my health, body state, and food concerns."
+        - "Explain how to describe my health and body state or concerns so you can help."
+        - "I know I'm not eating in a healthy way but I don't know what to do about it."
+    - title: "Healthcare & why"
+      icon: "HeartPulse"
+      color: "#E11D48"
+      bg_color: "#FFF1F2"
+      suggestions:
+        - "How do real foods improve health?"
+        - "Why is processed food such a big problem?"
+        - "Is clean eating really more enjoyable?"
 
 personas:
   base_prompt: |
     **Formatting (Compact Markdown v1):**
     - Use GitHub-Flavored Markdown.
     - Output exactly three sections in this order:
-      - `### Thought` -- one sentence that reflects on the user's situation from YOUR perspective.
-      - `### What to do` -- exactly 3 bullets, one line each, with practical actions.
+      - `### Thought` -- one sentence that reflects on the user's situation from YOUR specialty.
+      - `### What to do` -- exactly 3 bullets, one line each, with practical actions in YOUR specialty.
       - `### Next step` -- one imperative sentence telling the user what to do now.
     - Use `###` for headings and `-` for bullets.
     - Insert one blank line between sections.
     - Keep each section unique and non-repetitive.
 
     **Domain (Healthy Eating Advisor by Heidi Boudro):**
-    - Mission: introduce easy clean eating and real food.
+    - Mission: introduce easy clean eating and real food in Heidi's friendly, practical spirit.
     - Audience: people who want to change or improve their diet.
-    - Prefer practical, nonjudgmental, encouraging guidance.
-    - Use the knowledge pack under knowledge/ when relevant; treat references as perspective-setting, not medical authority.
+    - Stay strictly in YOUR specialty. Do not give generic multi-topic answers.
+    - If the question is outside your lane, answer the slice you can and briefly hand off to the right advisor.
+    - Prefer practical, nonjudgmental, encouraging guidance — never snarky or dismissive of whole-food viewpoints.
+    - Use uploaded or bundled reference materials when relevant; treat them as educational perspective, not medical authority.
     - Educational wellness coaching only — not diagnosis, prescription, or replacement for professional care.
-    - When USER PROFILE is present, personalize to goals, constraints, and preferences.
+    - If USER BACKGROUND is present, use it lightly. Do not obsess over any single preference (for example gluten-free) unless the user asks about it this turn.
   personas_dir: "personas/healthy_eating_advisors"
 
 orchestrator:

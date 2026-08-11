@@ -16,10 +16,11 @@ Corpus from Heidi Boudro's July 29 2026 RAG materials, organized by advisor pers
 ## How RAG is loaded
 
 1. These markdown files ship in the repo (and Docker image under `knowledge/`).
-2. In the UI, **upload** relevant `.md` files into a chat when you want citeable grounding — the CCAI document pipeline (`documents` routes + `rag_manager.py` / ChromaDB) embeds chunks for retrieval.
-3. Persona system prompts (from Heidi's materials) also tell each advisor to treat reference materials as perspective-setting educational content, not medical authority.
-4. Chroma collection + embedding model are configured in `healthyeating_config.yaml` → `rag:` (`healthy_eating_documents`, `all-MiniLM-L6-v2`).
-5. When `DATA_DIR` is set (HF Spaces `/data`), Chroma persistence survives rebuilds.
+2. On app startup, `knowledge_pack.py` seeds every `*.md` (except README/SOURCES) into a shared Chroma session (`__hea_knowledge_pack__`) so advisors can retrieve Heidi's corpus without a manual upload.
+3. Users can still **upload** extra `.md` / PDF files in chat; uploads stay session-scoped and are searched together with the bundled pack.
+4. Persona system prompts (from Heidi's materials) also tell each advisor to treat reference materials as perspective-setting educational content, not medical authority.
+5. Chroma collection + embedding model are configured in `healthyeating_config.yaml` → `rag:` (`healthy_eating_documents`, `all-MiniLM-L6-v2`).
+6. When `DATA_DIR` is set (HF Spaces `/data`), Chroma persistence survives rebuilds.
 
 ## Source
 

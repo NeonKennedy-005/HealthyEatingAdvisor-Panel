@@ -229,8 +229,13 @@ const TourLauncher = () => {
   const { setIsOpen, isOpen } = useTour();
 
   useEffect(() => {
+    // Show at most once per browser. Never re-open on tab/page switches.
+    if (TESTING_ONBOARDING) {
+      const t = setTimeout(() => setIsOpen(true), 400);
+      return () => clearTimeout(t);
+    }
     const seen = localStorage.getItem(STORAGE_KEY) === 'true';
-    if (TESTING_ONBOARDING || !seen) {
+    if (!seen) {
       const t = setTimeout(() => setIsOpen(true), 400);
       return () => clearTimeout(t);
     }

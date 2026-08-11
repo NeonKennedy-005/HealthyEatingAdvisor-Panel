@@ -111,6 +111,7 @@ class PersonaItemConfig(_IconValidatorMixin):
     icon: str = "HelpCircle"
     avatar: Optional[str] = None
     temperature: int = 5
+    sort_order: int = 100
     persona_prompt: str = ""
 
     @model_validator(mode='after')
@@ -175,6 +176,7 @@ class PersonaItemConfig(_IconValidatorMixin):
             "bg_color": self.bg_color,
             "dark_color": self.dark_color,
             "dark_bg_color": self.dark_bg_color,
+            "sort_order": self.sort_order,
             "image": self._resolve_image(),
             }
 
@@ -464,7 +466,7 @@ def load_personas_from_dir(personas_dir: str) -> List[PersonaItemConfig]:
     seen_ids: dict[str, str] = {}     # id -> filename that defined it
     seen_names: dict[str, str] = {}   # name -> filename that defined it
 
-    # sorting files alphabetically ensures consistent and predictable loading order
+    # Load every YAML, then sort by explicit sort_order (not filename alphabet).
     for filepath in sorted(dir_path.glob("*.yaml")):
         try:
             with open(filepath, "r", encoding="utf-8") as fh:
@@ -496,6 +498,7 @@ def load_personas_from_dir(personas_dir: str) -> List[PersonaItemConfig]:
         seen_names[persona.name] = filepath.name
         personas.append(persona)
 
+    personas.sort(key=lambda p: (p.sort_order, p.name.lower()))
     logger.info(f"Loaded {len(personas)} persona(s) from {personas_dir}")
     return personas
 

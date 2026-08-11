@@ -302,36 +302,52 @@ const Sidebar = ({
           )}
         </div>
 
-        {/* Search + New Chat - only show when expanded */}
+        {/* New Chat + Search - only show when expanded */}
         {!isCollapsed && (
-          <div className="sidebar-search">
-            <div className="search-container">
-              <Search size={16} className="search-icon" />
-              <input
-                type="text"
-                placeholder={
-                  isOnCanvas
-                    ? (canvasSubview === 'deliverables' ? 'Search drafts...'
-                       : canvasSubview === 'insights' ? 'Search sections...'
-                       : 'Search widgets...')
-                    : 'Search chats...'
-                }
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="search-input"
-              />
-            </div>
+          <>
             {!isOnCanvas && (
-              <button
-                className="new-chat-icon-btn"
-                onClick={handleNewChat}
-                disabled={isCreatingNewChat}
-                title={isCreatingNewChat ? 'Creating...' : 'New Chat'}
-              >
-                <SquarePen size={18} />
-              </button>
+              <div className="sidebar-new-chat-wrap">
+                <button
+                  className="new-chat-button"
+                  onClick={handleNewChat}
+                  disabled={isCreatingNewChat}
+                  type="button"
+                >
+                  <SquarePen size={18} />
+                  <span>{isCreatingNewChat ? 'Creating...' : 'New Chat'}</span>
+                </button>
+              </div>
             )}
-          </div>
+            <div className="sidebar-search">
+              <div className="search-container">
+                <Search size={16} className="search-icon" />
+                <input
+                  type="text"
+                  placeholder={
+                    isOnCanvas
+                      ? (canvasSubview === 'deliverables' ? 'Search drafts...'
+                         : canvasSubview === 'insights' ? 'Search sections...'
+                         : 'Search widgets...')
+                      : 'Search chats...'
+                  }
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="search-input"
+                />
+              </div>
+              {!isOnCanvas && (
+                <button
+                  className="new-chat-icon-btn"
+                  onClick={handleNewChat}
+                  disabled={isCreatingNewChat}
+                  title={isCreatingNewChat ? 'Creating...' : 'New Chat'}
+                  type="button"
+                >
+                  <SquarePen size={18} />
+                </button>
+              )}
+            </div>
+          </>
         )}
 
         {/* Canvas sidebar — subview-aware (Insights / Workspace / Deliverables) */}

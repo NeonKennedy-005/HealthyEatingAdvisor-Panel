@@ -330,7 +330,7 @@ const EnhancedChatInput = ({
                 <button
                   onClick={synthesizedMode ? onToggleSynthesized : undefined}
                   type="button"
-                  title="Panel Response (3 advisors)"
+                  title="Panel response (each active advisor)"
                   style={{
                     display: 'flex', alignItems: 'center', gap: '4px',
                     padding: '5px 10px', fontSize: '12px', fontWeight: 600,

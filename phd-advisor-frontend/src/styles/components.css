@@ -280,7 +280,24 @@
   aspect-ratio: 16 / 9;
   object-fit: cover;
   border-radius: 12px;
-  background: #f1f5f9;
+  background: transparent;
+  border: 1px dashed var(--border-primary, #cbd5e1);
+}
+
+.career-source-image--empty {
+  background: transparent;
+  min-height: 120px;
+}
+
+.career-sources-intro a {
+  color: #0f766e;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.career-sources-intro a:hover {
+  color: #047857;
 }
 
 .career-source-link {

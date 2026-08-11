@@ -316,6 +316,11 @@
 }
 
 /* New Chat Button */
+.sidebar-new-chat-wrap {
+  padding: 12px 20px 0;
+  flex-shrink: 0;
+}
+
 .new-chat-button {
   display: flex;
   align-items: center;
@@ -323,17 +328,17 @@
   gap: 8px;
   width: 100%;
   padding: 12px 16px;
-  background: var(--primary-color, #3b82f6);
+  background: var(--accent-primary, #0F766E);
   color: white;
   border: none;
-  border-radius: 8px;
-  font-weight: 500;
+  border-radius: 10px;
+  font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
 .new-chat-button:hover {
-  background: var(--primary-color-hover, #2563eb);
+  background: var(--accent-secondary, #047857);
   transform: translateY(-1px);
 }
 
