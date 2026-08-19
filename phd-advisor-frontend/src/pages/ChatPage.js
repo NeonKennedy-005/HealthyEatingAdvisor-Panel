@@ -19,7 +19,9 @@ import SearchPathGate, { needsSearchPath } from '../components/SearchPathGate';
 import ClearDataModal from '../components/ClearDataModal';
 import AccountModal from '../components/AccountModal';
 
-const ACTIVE_ADVISORS_STORAGE_KEY = 'muscleGrowthActiveAdvisorIds';
+// Panel-specific key so prior single-advisor (e.g. Veggie-only) prefs don't stick.
+const ACTIVE_ADVISORS_STORAGE_KEY = 'healthyEatingActiveAdvisorIds';
+const LEGACY_ACTIVE_ADVISORS_STORAGE_KEY = 'muscleGrowthActiveAdvisorIds';
 
 const ChatPage = ({ user, authToken, onNavigateToHome, onNavigateToCanvas, onSignOut }) => {
   const { config, advisors, getAdvisorColors } = useAppConfig();
@@ -101,6 +103,13 @@ const ChatPage = ({ user, authToken, onNavigateToHome, onNavigateToCanvas, onSig
     const allIds = Object.keys(advisors || {});
     if (allIds.length === 0) return;
 
+    // Drop legacy key so Heidi's "Veggie Chef only" sticky default resets to all six.
+    try {
+      localStorage.removeItem(LEGACY_ACTIVE_ADVISORS_STORAGE_KEY);
+    } catch {
+      /* ignore */
+    }
+
     setActiveAdvisorIds((prev) => {
       let next = prev.filter((id) => allIds.includes(id));
       if (next.length === 0) {
@@ -114,6 +123,7 @@ const ChatPage = ({ user, authToken, onNavigateToHome, onNavigateToCanvas, onSig
           /* ignore */
         }
       }
+      // Heidi Aug 18: default is all six (not Veggie Chef alone).
       if (next.length === 0) next = [...allIds];
       if (
         prev.length === next.length &&

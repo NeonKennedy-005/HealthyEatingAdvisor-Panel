@@ -1137,11 +1137,12 @@ When analyzing the document context:
             ],
             "veggie_chef": [
                 "vegetable", "veggie", "broccoli", "carrot", "brassica",
-                "nightshade", "steam", "salad", "greens",
+                "nightshade", "steam", "salad", "greens", "daikon", "radish",
+                "bok choy", "stir-fry", "stir fry", "plantain", "guacamole",
             ],
             "fruit_maven": [
                 "fruit", "juice", "berry", "blueberry", "pomegranate",
-                "banana", "apple", "citrus", "plantain",
+                "banana", "apple", "citrus", "frozen fruit",
             ],
             "superfoods_superman": [
                 "superfood", "ginger", "turmeric", "coconut", "fish oil",

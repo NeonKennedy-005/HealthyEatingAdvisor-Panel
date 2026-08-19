@@ -1,6 +1,11 @@
 import React from 'react';
 import { useAppConfig } from '../contexts/AppConfigContext';
 
+/**
+ * Panel footer / sidebar notice.
+ * When app.footer_text is set (Healthy Eating: educational disclaimer), show only that.
+ * Otherwise fall back to the Neon.ai copyright line.
+ */
 const CopyrightNotice = ({ variant = 'footer', className = '' }) => {
   const { config } = useAppConfig();
   const isSidebar = variant === 'sidebar';
@@ -8,12 +13,8 @@ const CopyrightNotice = ({ variant = 'footer', className = '' }) => {
   const patentsClass = isSidebar ? 'sidebar-patents-link' : 'footer-patents-link';
   const combinedClass = className ? `${textClass} ${className}` : textClass;
 
-  // Prefer the author/copyright line from config (app.footer_text). This keeps
-  // the footer themed per-panel instead of hardcoding a single brand.
   const footerText = config?.app?.footer_text?.trim();
 
-  // When a panel provides its own footer_text (author/copyright line), show only
-  // that and skip the Neon.ai brand + patents link.
   if (footerText) {
     return <p className={combinedClass}>{footerText}</p>;
   }

@@ -1037,8 +1037,11 @@
 
 .footer-text {
   color: var(--text-secondary);
-  font-size: 14px;
-  margin: 0;
+  font-size: 12px;
+  line-height: 1.45;
+  margin: 0 auto;
+  max-width: 720px;
+  text-align: center;
 }
 
 .footer-neon-link {

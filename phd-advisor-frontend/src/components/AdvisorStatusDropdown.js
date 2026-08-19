@@ -60,7 +60,9 @@ const AdvisorStatusDropdown = ({
   const selectNone = (event) => {
     event.stopPropagation();
     if (onSetActiveAdvisors && allIds.length > 0) {
-      onSetActiveAdvisors([allIds[0]]);
+      // Prefer Kitchen Coach when minimizing (sort_order 1), not Veggie Chef alone.
+      const kitchenId = allIds.includes('kitchen_coach') ? 'kitchen_coach' : allIds[0];
+      onSetActiveAdvisors([kitchenId]);
     }
   };
 
