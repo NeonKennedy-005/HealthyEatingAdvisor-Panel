@@ -150,8 +150,8 @@ export const AppConfigProvider = ({ children }) => {
       root.setProperty('--feature-icon-color', primary);
       root.setProperty('--input-focus', primary);
       root.setProperty('--accent-secondary', '#047857');
-      root.setProperty('--accent-gradient', `linear-gradient(135deg, ${primary}, #059669)`);
-      root.setProperty('--input-focus-shadow', '0 0 0 3px rgba(15, 118, 110, 0.15)');
+      root.setProperty('--accent-gradient', `linear-gradient(135deg, ${primary}, #10B981)`);
+      root.setProperty('--input-focus-shadow', '0 0 0 3px rgba(5, 150, 105, 0.15)');
     };
 
     applyBrand();

@@ -8,7 +8,7 @@
 app:
   title: "Healthy Eating Advisor"
   subtitle: "AI-Powered Tips For Clean Eating and Real Food"
-  primary_color: "#7C3AED"
+  primary_color: "#059669"
   logo_icon: "Leaf"
   # Educational disclaimer (shown in homepage footer + chat sidebar). No copyright/name line.
   footer_text: >-
@@ -18,8 +18,8 @@ app:
     not replace professional medical evaluations. Always consult a physician for
     diagnosis or treatment.
   user_avatars:
-    - { id: "leaf-violet", icon: "Leaf", color: "#7C3AED", bg: "#F5F3FF" }
-    - { id: "user-emerald", icon: "User", color: "#059669", bg: "#ECFDF5" }
+    - { id: "leaf-emerald", icon: "Leaf", color: "#059669", bg: "#ECFDF5" }
+    - { id: "user-emerald", icon: "User", color: "#047857", bg: "#D1FAE5" }
     - { id: "utensils-amber", icon: "UtensilsCrossed", color: "#D97706", bg: "#FFFBEB" }
     - { id: "carrot-orange", icon: "Carrot", color: "#EA580C", bg: "#FFF7ED" }
     - { id: "cherry-rose", icon: "Cherry", color: "#E11D48", bg: "#FFF1F2" }

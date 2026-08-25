@@ -1,43 +1,43 @@
 /* CSS Custom Properties for Theming
-   Healthy Eating Advisor: violet brand (#7C3AED) with soft lilac surfaces */
+   Healthy Eating Advisor: emerald brand (#059669) matching dark-mode greens */
 :root[data-theme="light"] {
   /* Background Colors */
   --bg-primary: #FFFFFF;
-  --bg-secondary: #F5F3FF;
-  --bg-tertiary: #EDE9FE;
-  --bg-gradient: linear-gradient(135deg, #F5F3FF 0%, #FFFFFF 48%, #F5F3FF 100%);
+  --bg-secondary: #ECFDF5;
+  --bg-tertiary: #D1FAE5;
+  --bg-gradient: linear-gradient(135deg, #ECFDF5 0%, #FFFFFF 48%, #F0FDF4 100%);
   
   /* Text Colors */
   --text-primary: #0F172A;
   --text-secondary: #475569;
   --text-tertiary: #64748B;
-  --text-accent: #5B21B6;
+  --text-accent: #065F46;
   
   /* Border Colors */
-  --border-primary: #DDD6FE;
-  --border-secondary: #C4B5FD;
-  --border-tertiary: #EDE9FE;
+  --border-primary: #A7F3D0;
+  --border-secondary: #6EE7B7;
+  --border-tertiary: #D1FAE5;
   
-  /* Accent Colors — brand teal + deeper emerald companion */
-  --accent-primary: #7C3AED;
-  --accent-secondary: #6D28D9;
-  --accent-gradient: linear-gradient(135deg, #7C3AED, #8B5CF6);
-  --accent-soft: #EDE9FE;
-  --accent-muted: #DDD6FE;
+  /* Accent Colors — emerald primary + deeper companion */
+  --accent-primary: #059669;
+  --accent-secondary: #047857;
+  --accent-gradient: linear-gradient(135deg, #059669, #10B981);
+  --accent-soft: #D1FAE5;
+  --accent-muted: #A7F3D0;
   
   /* Shadow Colors */
-  --shadow-sm: 0 1px 3px rgba(124, 58, 237, 0.08);
-  --shadow-md: 0 10px 15px -3px rgba(124, 58, 237, 0.10);
-  --shadow-lg: 0 20px 25px -5px rgba(124, 58, 237, 0.12);
+  --shadow-sm: 0 1px 3px rgba(5, 150, 105, 0.08);
+  --shadow-md: 0 10px 15px -3px rgba(5, 150, 105, 0.10);
+  --shadow-lg: 0 20px 25px -5px rgba(5, 150, 105, 0.12);
   --shadow-xl: 0 25px 50px -12px rgba(15, 23, 42, 0.22);
   
   /* Feature Colors */
-  --feature-bg: #F5F3FF;
-  --feature-icon-color: #7C3AED;
+  --feature-bg: #ECFDF5;
+  --feature-icon-color: #059669;
   
   /* Success / status */
-  --success: #8B5CF6;
-  --success-bg: #F5F3FF;
+  --success: #059669;
+  --success-bg: #ECFDF5;
   --success-border: #A7F3D0;
   
   /* Error Colors */
@@ -47,14 +47,14 @@
   
   /* Input Colors */
   --input-bg: #FFFFFF;
-  --input-border: #B6D9D2;
-  --input-focus: #7C3AED;
-  --input-focus-shadow: 0 0 0 3px rgba(124, 58, 237, 0.15);
+  --input-border: #A7F3D0;
+  --input-focus: #059669;
+  --input-focus-shadow: 0 0 0 3px rgba(5, 150, 105, 0.15);
 
   /* App header (floating bar) */
-  --header-bg: #F5F3FF;
-  --header-border: rgba(124, 58, 237, 0.18);
-  --header-shadow: 0 4px 20px rgba(124, 58, 237, 0.10);
+  --header-bg: #ECFDF5;
+  --header-border: rgba(5, 150, 105, 0.18);
+  --header-shadow: 0 4px 20px rgba(5, 150, 105, 0.10);
 }
 
 :root[data-theme="dark"] {
@@ -280,13 +280,9 @@
   aspect-ratio: 16 / 9;
   object-fit: cover;
   border-radius: 12px;
-  background: transparent;
-  border: 1px dashed var(--border-primary, #cbd5e1);
-}
-
-.career-source-image--empty {
-  background: transparent;
-  min-height: 120px;
+  background: var(--bg-tertiary, #D1FAE5);
+  border: none;
+  display: block;
 }
 
 .career-sources-intro a {
