@@ -704,13 +704,13 @@ export function HabitModal({ data, onClose }) {
 export function GoalModal({ data, onClose }) {
   const init = data.initial || {};
   const [label, setL] = useState(init.label || '');
-  const [progress, setP] = useState(init.progress ?? 0);
+  const [note, setNote] = useState(init.note || '');
   const [due, setD] = useState(init.due || '');
   const editing = !!init.id;
 
   const submit = () => {
     if (!label) return;
-    data.onSave({ label, progress: +progress, due });
+    data.onSave({ label, note, due, progress: init.progress ?? 0, successAt: init.successAt });
     onClose();
   };
 
@@ -720,7 +720,7 @@ export function GoalModal({ data, onClose }) {
         <div className="modal-icon"><Icon name="bullseye" size={18}/></div>
         <div style={{ flex: 1 }}>
           <div className="modal-title">{editing ? 'Edit goal' : 'New goal'}</div>
-          <div className="modal-sub">Strength target or body-composition milestone.</div>
+          <div className="modal-sub">Choose your own goal. Completed goals are a Success, not crossed off.</div>
         </div>
         <button className="icon-btn" onClick={onClose}><Icon name="x" size={16}/></button>
       </div>
@@ -728,17 +728,15 @@ export function GoalModal({ data, onClose }) {
         <div className="form-grid">
           <div className="form-row">
             <label className="label">Goal</label>
-            <input className="input" autoFocus value={label} onChange={e => setL(e.target.value)} placeholder="Submit Aim 2 to advisor by July"/>
+            <input className="input" autoFocus value={label} onChange={e => setL(e.target.value)} placeholder="Add one vegetable each day for a week."/>
           </div>
-          <div className="form-grid two">
-            <div className="form-row">
-              <label className="label">Progress · {progress}%</label>
-              <input type="range" min="0" max="100" step="5" value={progress} onChange={e => setP(+e.target.value)} style={{ accentColor: 'var(--canvas-accent)' }}/>
-            </div>
-            <div className="form-row">
-              <label className="label">Due (optional)</label>
-              <input className="input" value={due} onChange={e => setD(e.target.value)} placeholder="Q3 2026"/>
-            </div>
+          <div className="form-row">
+            <label className="label">What was actually done (optional)</label>
+            <input className="input" value={note} onChange={e => setNote(e.target.value)} placeholder="A short note for your successes list"/>
+          </div>
+          <div className="form-row">
+            <label className="label">Due (optional)</label>
+            <input className="input" value={due} onChange={e => setD(e.target.value)} placeholder="this week"/>
           </div>
         </div>
       </div>

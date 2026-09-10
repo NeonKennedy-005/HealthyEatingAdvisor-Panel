@@ -29,12 +29,23 @@ class OpenAIFallbackClient(LLMClient):
         reasoning_effort: Optional[str] = None,
     ):
         api_key = normalize_secret(api_key)
-        if not api_key:
-            raise ValueError("OpenAI API key not set. Provide OPENAI_API_KEY or llm.openai.api_key.")
         self.model = model
         self.reasoning_effort = reasoning_effort
-        self.client = AsyncOpenAI(api_key=api_key, timeout=120.0)
+        self._api_key = api_key
+        if not api_key:
+            logger.warning(
+                "OPENAI_API_KEY is not set. Health, config, and guest login still work; "
+                "chat will fail until a key is provided."
+            )
+        self.client = AsyncOpenAI(api_key=api_key or "missing-local-openai-key", timeout=120.0)
         self.context_manager = get_context_manager()
+
+    def _require_key(self) -> None:
+        if not self._api_key:
+            raise RuntimeError(
+                "OpenAI API key not set. Add OPENAI_API_KEY to multi_llm_chatbot_backend/.env "
+                "and restart the backend to enable chat."
+            )
 
     @staticmethod
     def _auth_failure(exc: AuthenticationError) -> RuntimeError:
@@ -101,6 +112,7 @@ class OpenAIFallbackClient(LLMClient):
         if response_mime_type == "application/json":
             create_kwargs["response_format"] = {"type": "json_object"}
 
+        self._require_key()
         try:
             response = await self.client.chat.completions.create(**create_kwargs)
             text = (response.choices[0].message.content or "").strip()
@@ -135,6 +147,7 @@ class OpenAIFallbackClient(LLMClient):
         all_tool_calls: List[ToolCallInfo] = []
         has_tools = bool(openai_tools)
 
+        self._require_key()
         try:
             for _round in range(self._MAX_TOOL_ROUNDS):
                 token_kwarg = "max_completion_tokens" if self._uses_completion_tokens_param() else "max_tokens"

@@ -3,6 +3,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import Icon from './CanvasIcon';
 import { MOD } from './platform';
+import { EXAMPLE_GOALS, PRODUCE_BOARD_COLS } from './canvasData';
 
 const fireToast = (msg, kind = 'success') =>
   window.dispatchEvent(new CustomEvent('canvas-toast', { detail: { msg, kind } }));
@@ -169,6 +170,19 @@ export function BibliographyWidget({ state, setState, openModal }) {
 // ===== Kanban (with priority filter chips + due-date sort) =====
 const PRI_RANK = { high: 0, med: 1, low: 2 };
 export function KanbanWidget({ state, setState, openModal }) {
+  const cols = (state.cols || []).some(c => c.id === 'veg-like')
+    ? state.cols
+    : PRODUCE_BOARD_COLS;
+  useEffect(() => {
+    const hasFoodCols = (state.cols || []).some(c => c.id === 'veg-like');
+    if (hasFoodCols) return;
+    const mapCol = { todo: 'veg-try', doing: 'veg-like', stuck: 'fruit-try', done: 'fruit-like' };
+    setState({
+      ...state,
+      cols: PRODUCE_BOARD_COLS,
+      cards: (state.cards || []).map(c => ({ ...c, col: mapCol[c.col] || 'veg-try' })),
+    });
+  }, [state, setState]);
   const [dragId, setDragId] = useState(null);
   const [dragCol, setDragCol] = useState(null);
   const [editId, setEditId] = useState(null);
@@ -218,7 +232,7 @@ export function KanbanWidget({ state, setState, openModal }) {
         </select>
       </div>
     <div className="kanban">
-      {state.cols.map(col => {
+      {cols.map(col => {
         const cards = sortCards(visibleCards.filter(c => c.col === col.id));
         return (
           <div key={col.id}
@@ -475,7 +489,7 @@ export function WritingWidget({ state, setState }) {
 
           <textarea
             className="textarea"
-            placeholder="Start writing here. Word count tracks live."
+            placeholder="Add foods here. Put a note after a dash — e.g. spinach — baby leaves for salad."
             style={{ minHeight: 110, fontFamily: 'var(--canvas-sans)', fontSize: 13, lineHeight: 1.55 }}
             value={active.draft || ''}
             onChange={e => onDraftChange(e.target.value)}
@@ -490,6 +504,16 @@ export function WritingWidget({ state, setState }) {
             </div>
             <button className="btn" style={{ padding: '4px 9px', fontSize: 11 }} onClick={saveSession}>
               <Icon name="check" size={11}/>Save session
+            </button>
+            <button className="btn" style={{ padding: '4px 9px', fontSize: 11 }} onClick={() => {
+              const text = chapters.map(c => `# ${c.name}\n${c.draft || ''}`).join('\n\n');
+              const a = document.createElement('a');
+              a.href = URL.createObjectURL(new Blob([text], { type: 'text/plain' }));
+              a.download = 'shopping-list.txt';
+              a.click();
+              fireToast('Shopping list exported');
+            }}>
+              <Icon name="download" size={11}/>Export
             </button>
           </div>
         </>
@@ -846,40 +870,84 @@ export function HabitsWidget({ state, setState, openModal }) {
 }
 
 // ===== Goals =====
+const MAX_ACTIVE_GOALS = 3;
 export function GoalsWidget({ state, setState, openModal }) {
   const goals = state.items || [];
-  const add = () => openModal('goal', { onSave: (g) => setState({ ...state, items: [...goals, { ...g, id: 'g' + Date.now() }] }) });
+  const active = goals.filter(g => !g.successAt);
+  const successes = [...goals.filter(g => g.successAt)].sort((a, b) => (b.successAt || 0) - (a.successAt || 0));
+  const persist = (items) => setState({ ...state, items });
+  const add = (label) => {
+    if (active.length >= MAX_ACTIVE_GOALS) {
+      fireToast('Ideally no more than three goals at a time.', 'danger');
+      return;
+    }
+    if (label) {
+      persist([...goals, { id: 'g' + Date.now(), label, progress: 0 }]);
+      return;
+    }
+    openModal('goal', {
+      onSave: (g) => persist([...goals, { ...g, id: 'g' + Date.now() }]),
+    });
+  };
   const edit = (g) => openModal('goal', {
     initial: g,
-    onSave: (next) => setState({ ...state, items: goals.map(x => x.id === g.id ? { ...x, ...next } : x) }),
-    onDelete: () => setState({ ...state, items: goals.filter(x => x.id !== g.id) }),
+    onSave: (next) => persist(goals.map(x => x.id === g.id ? { ...x, ...next } : x)),
+    onDelete: () => persist(goals.filter(x => x.id !== g.id)),
   });
-  const updateProgress = (id, pct) => setState({ ...state, items: goals.map(g => g.id === id ? { ...g, progress: pct } : g) });
+  const markSuccess = (g) => persist(goals.map(x => x.id === g.id ? { ...x, successAt: Date.now(), progress: 100 } : x));
+
+  const unusedExamples = EXAMPLE_GOALS.filter(label => !goals.some(g => g.label === label));
 
   return (
     <>
+      <div style={{ fontSize: 12, color: 'var(--canvas-text-3)', marginBottom: 6 }}>
+        These will need to be Goals and not Tasks. Ideally no more than three goals at a time.
+      </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-        {goals.map(g => (
-          <div key={g.id} className="note-row" style={{ padding: '10px 12px', cursor: 'pointer' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }} onClick={() => edit(g)}>
+        {active.map(g => (
+          <div key={g.id} className="note-row" style={{ padding: '10px 12px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }} onClick={() => edit(g)}>
               <Icon name="bullseye" size={13} style={{ color: 'var(--canvas-accent)' }}/>
               <span style={{ fontSize: 13, fontWeight: 500, flex: 1 }}>{g.label}</span>
-              <span style={{ fontFamily: 'var(--canvas-mono)', fontSize: 11, color: 'var(--canvas-accent)' }}>{g.progress}%</span>
             </div>
-            <div className="progress" style={{ height: 5, marginTop: 2 }}>
-              <i style={{ width: g.progress + '%' }}/>
-            </div>
-            <input type="range" min="0" max="100" step="5" value={g.progress}
-              onChange={e => updateProgress(g.id, +e.target.value)}
-              style={{ width: '100%', accentColor: 'var(--canvas-accent)', marginTop: 2, height: 12 }}/>
+            {g.note && <div className="note-text" style={{ fontSize: 12, color: 'var(--canvas-text-2)' }}>{g.note}</div>}
             {g.due && <div className="note-meta"><span>due {g.due}</span></div>}
+            <button className="btn" style={{ marginTop: 6, padding: '4px 9px', fontSize: 11 }} onClick={() => markSuccess(g)}>
+              <Icon name="check" size={11}/>Success
+            </button>
           </div>
         ))}
-        {goals.length === 0 && (
-          <EmptyState icon="bullseye" title="No goals yet" hint="Strength targets, body-composition goals, anything you want to track."/>
+        {active.length === 0 && (
+          <EmptyState icon="bullseye" title="No goals yet" hint="Choose your own goal, or tap an example below. Food isn't someone's job."/>
         )}
       </div>
-      <button className="add-tiny" onClick={add}>+ New goal</button>
+      {unusedExamples.length > 0 && active.length < MAX_ACTIVE_GOALS && (
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 8 }}>
+          {unusedExamples.map(label => (
+            <button key={label} className="chip" onClick={() => add(label)} style={{ fontSize: 11 }}>{label}</button>
+          ))}
+        </div>
+      )}
+      <button className="add-tiny" onClick={() => add()} disabled={active.length >= MAX_ACTIVE_GOALS}>
+        {active.length >= MAX_ACTIVE_GOALS ? 'Three goals in progress' : '+ New goal'}
+      </button>
+      {successes.length > 0 && (
+        <div style={{ marginTop: 12 }}>
+          <div style={{ fontSize: 10, color: 'var(--canvas-text-4)', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 600, marginBottom: 6 }}>
+            Successes
+          </div>
+          {successes.map(g => (
+            <div key={g.id} className="note-row" style={{ padding: '8px 10px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Icon name="check" size={12} style={{ color: 'var(--canvas-accent)' }}/>
+                <span style={{ fontSize: 12.5, fontWeight: 500, flex: 1 }}>{g.label}</span>
+                <span className="note-meta"><span>{new Date(g.successAt).toLocaleDateString()}</span></span>
+              </div>
+              {g.note && <div className="note-text" style={{ fontSize: 12, color: 'var(--canvas-text-2)' }}>{g.note}</div>}
+            </div>
+          ))}
+        </div>
+      )}
     </>
   );
 }
@@ -1439,20 +1507,20 @@ export function DocumenterWidget({ state, setState }) {
   );
 }
 
-// ===== Search Roadmap — semester internship milestones with status + notes =====
+// ===== Habit Roadmap — clean-eating milestones with status + notes =====
 const PHD_MILESTONES = [
-  { id: 'courses', label: 'Clarify goals & academic standing', hint: 'Internship vs FT, target start term, hours/week available.' },
-  { id: 'prelim', label: 'Define target roles & industries', hint: 'Primary lane + 1 backup lane (e.g. analytics + marketing ops).' },
-  { id: 'lit-review', label: 'Audit resume & LinkedIn', hint: 'Quantified bullets; expand About Me into a scannable LinkedIn headline + About.' },
-  { id: 'topic', label: 'Build a company shortlist', hint: '20–40 targets across Handshake, LinkedIn, and career fairs.' },
-  { id: 'committee', label: 'Set weekly apply cadence', hint: 'Protect recurring apply blocks on your calendar.' },
-  { id: 'irb', label: 'Draft STAR story bank', hint: 'Leadership, teamwork, conflict, failure, impact — five stories.' },
-  { id: 'data', label: 'Start tracking applications', hint: 'Wishlist → Applied → Interview → Offer with deadlines.' },
-  { id: 'comps', label: 'First pipeline check', hint: 'Review callback rate after 10–15 tailored apps.' },
-  { id: 'analysis', label: 'Tighten materials from feedback', hint: 'Rewrite weak bullets; mirror JD keywords honestly.' },
-  { id: 'writing', label: 'Interview practice week', hint: 'Mock screens aloud; research each company the night before.' },
-  { id: 'defense', label: 'Offer comparison & negotiation', hint: 'Pay, learning, team, location, return-offer odds.' },
-  { id: 'proquest', label: 'Accept & transition plan', hint: 'Onboarding notes, housing/logistics, and thank-you outreach.' },
+  { id: 'courses', label: 'Clarify goals & kitchen setup', hint: 'Clean eating vs more produce, time per week, tools you already have.' },
+  { id: 'prelim', label: 'Define target meals & produce', hint: 'Primary lane + 1 backup lane (e.g. veggie dinners + fruit breakfasts).' },
+  { id: 'lit-review', label: 'Audit pantry & fridge', hint: 'Short ingredient lists; keep washed produce visible.' },
+  { id: 'topic', label: 'Build a produce shortlist', hint: '10–15 fruits and vegetables you will actually cook or snack on.' },
+  { id: 'committee', label: 'Set weekly prep cadence', hint: 'Protect recurring wash/chop blocks on your calendar.' },
+  { id: 'irb', label: 'Draft a flavor-note bank', hint: 'Easy swaps, leftover wins, snack upgrades — five notes.' },
+  { id: 'data', label: 'Start tracking meals', hint: 'To try → Prepping → This week → Done with market days.' },
+  { id: 'comps', label: 'First habit check', hint: 'Review homemade-meal count after 7–10 days.' },
+  { id: 'analysis', label: 'Tighten the plan from feedback', hint: 'Reuse winners; drop recipes that never get cooked.' },
+  { id: 'writing', label: 'Batch-prep practice week', hint: 'Cook one pot or sheet-pan meal you can repeat.' },
+  { id: 'defense', label: 'Compare what stuck', hint: 'Taste, time, leftovers, energy, and grocery cost.' },
+  { id: 'proquest', label: 'Keep & expand the rhythm', hint: 'Lock the two-week rotation and add one new produce item.' },
 ];
 
 export function PhdJourneyWidget({ state, setState }) {
@@ -1524,57 +1592,46 @@ export function PhdJourneyWidget({ state, setState }) {
   );
 }
 
-// ===== Career Resources — curated links + apps =====
-// Static curated list of useful internship/career tools, plus user-added links.
+// Food Resources — curated groups from Heidi Boudro, Food Resources Sep 1 2026.
+// Names and URLs are Heidi's wording; descriptions are left blank so we do not invent copy.
 const PHD_RESOURCE_GROUPS = [
   {
-    label: 'What employers look for',
+    label: 'Principles',
     items: [
-      { name: 'NACE — Resume attributes employers seek', href: 'https://www.naceweb.org/talent-acquisition/candidate-selection/what-are-employers-looking-for-when-reviewing-college-students-resumes', desc: 'Problem solving, teamwork, communication, initiative' },
-      { name: 'NACE — Career Readiness competencies', href: 'https://www.naceweb.org/career-readiness/competencies/career-readiness-defined/', desc: 'Shared language for skills employers and campuses use' },
-      { name: 'NACE — Skills-based hiring trend', href: 'https://www.naceweb.org/job-market/trends-and-predictions/employer-use-of-skills-based-hiring-practices-grows', desc: 'Why proving skills beats GPA-only screening' },
-      { name: 'NACE — Job Outlook 2026 Spring Update', href: 'https://naceweb.org/research/reports/2026/job-outlook/spring-update', desc: 'Hiring timing, experiential learning, skills focus' },
+      { name: 'Getting Started With Healthy Eating - Guidelines', href: 'https://www.getting-started-with-healthy-eating.com/healthy-eating-guidelines.html', desc: '' },
+      { name: 'Weston Price - Dietary Principles', href: 'https://www.westonaprice.org/11-principles-overview/', desc: '' },
     ],
   },
   {
-    label: 'University career centers',
+    label: 'Books',
     items: [
-      { name: 'CU Boulder Career Services', href: 'https://www.colorado.edu/career/', desc: 'Advising, events, and employer connections' },
-      { name: 'UCLA — LinkedIn Alumni tool', href: 'https://career.ucla.edu/blog/2024/08/08/how-to-use-linkedins-alumni-tool-for-networking/', desc: 'Filter alumni by company, major, location' },
-      { name: 'Dartmouth — LinkedIn guide', href: 'https://careerdesign.dartmouth.edu/resources/linkedin-resource-guide/', desc: 'Alumni search + outreach message templates' },
-      { name: 'UConn — Using LinkedIn', href: 'https://career.uconn.edu/using-linkedin/', desc: 'Profile, alumni tab, and student job search' },
-      { name: 'WashU — Informational interviews', href: 'https://careers.washu.edu/connect-with-alumni-for-an-informational-interview/', desc: 'How to ask for advice without asking for a job' },
-      { name: 'Bucknell — LinkedIn networking', href: 'https://careercenter.bucknell.edu/blog/2025/01/13/how-to-network-on-linkedin-like-a-pro/', desc: 'Student-friendly networking habits' },
+      { name: 'Eating Clean for Dummies', href: 'https://www.dummies.com/book/body-mind-spirit/physical-health-well-being/diet-nutrition/healthy-eating/eating-clean-for-dummies-2nd-edition-282162/', desc: '' },
+      { name: 'Nourishing Traditions', href: 'https://newtrendspublishing.com/nourishing-traditions/', desc: '' },
+      { name: 'In Defense of Food', href: 'https://michaelpollan.com/books/in-defense-of-food/', desc: '' },
+      { name: 'Enzyme Nutrition', href: 'https://www.foodenzymeinstitute.com/products/Enzyme-Nutrition-by-Dr-Edward-Howell.aspx', desc: '' },
     ],
   },
   {
-    label: 'Employer university programs',
+    label: 'Superfoods / Antioxidants',
     items: [
-      { name: 'Google Students', href: 'https://careers.google.com/students/', desc: 'Official student/internship recruiting hub' },
-      { name: 'Microsoft University', href: 'https://careers.microsoft.com/v2/global/en/universityrecruiting', desc: 'University recruiting programs & roles' },
-      { name: 'Amazon University Recruiting', href: 'https://www.amazon.jobs/en/teams/university-recruiting', desc: 'Intern and new-grad paths' },
-      { name: 'Meta Students', href: 'https://www.metacareers.com/students', desc: 'Student opportunities' },
-      { name: 'Apple Students', href: 'https://www.apple.com/careers/us/students.html', desc: 'Student career programs' },
-      { name: 'Deloitte Students', href: 'https://www2.deloitte.com/us/en/pages/careers/articles/join-deloitte-as-a-student.html', desc: 'Campus and internship recruiting' },
-      { name: 'JPMorgan Chase Students', href: 'https://careers.jpmorgan.com/us/en/students', desc: 'Student programs & applications' },
-      { name: 'Goldman Sachs Students', href: 'https://www.goldmansachs.com/careers/students', desc: 'Student career opportunities' },
+      { name: 'Louis Bonduelle Foundation - Antioxidants', href: 'https://www.fondation-louisbonduelle.org/en/nutrient/what-are-antioxidants/', desc: '' },
+      { name: 'Getting Started With Healthy Eating - List of Superfoods', href: 'https://www.getting-started-with-healthy-eating.com/list-of-superfoods.html', desc: '' },
+      { name: 'Nutrition Journal - Antioxidant Content', href: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC2841576/', desc: '' },
     ],
   },
   {
-    label: 'Job boards & platforms',
+    label: 'Food Enzymes / Fermentation',
     items: [
-      { name: 'Handshake', href: 'https://joinhandshake.com/', desc: 'Campus recruiting and internship listings' },
-      { name: 'LinkedIn Jobs', href: 'https://www.linkedin.com/jobs/', desc: 'Roles, Easy Apply, and alumni networking' },
-      { name: 'Indeed', href: 'https://www.indeed.com/', desc: 'Broad internship and entry-level search' },
-      { name: 'USAJOBS Pathways', href: 'https://www.usajobs.gov/Help/working-in-government/unique-hiring-paths/students/', desc: 'Federal student and recent-grad paths' },
+      { name: 'The Fermentation Association', href: 'https://www.youtube.com/c/TheFermentationAssociation/videos', desc: '' },
+      { name: 'Getting Started With Healthy Eating - List of High-Enzyme Foods', href: 'https://www.getting-started-with-healthy-eating.com/enzymes-in-food.html', desc: '' },
     ],
   },
   {
-    label: 'Resume & interview prep',
+    label: 'Avoiding Pesticides',
     items: [
-      { name: 'Teal Resume Builder', href: 'https://www.tealhq.com/tools/resume-builder', desc: 'Resume drafts and job tracking helpers' },
-      { name: 'Big Interview', href: 'https://biginterview.com/', desc: 'Structured interview practice' },
-      { name: 'LinkedIn Learning', href: 'https://www.linkedin.com/learning/', desc: 'Skill courses often free via campus access' },
+      { name: "EWG's Shopper's Guide to Pesticides in Produce", href: 'https://www.ewg.org/foodnews/full-list.php', desc: '' },
+      { name: 'Cornucopia Institute - Scorecards', href: 'https://www.cornucopia.org/scorecards/', desc: '' },
+      { name: 'Eatwild', href: 'https://www.eatwild.com/', desc: '' },
     ],
   },
 ];
@@ -1603,7 +1660,7 @@ export function PhdResourcesWidget({ state, setState }) {
             {g.items.map(it => (
               <a key={it.name} href={it.href} target="_blank" rel="noopener noreferrer" className="phd-resource-link">
                 <span className="phd-resource-name">{it.name}</span>
-                <span className="phd-resource-desc">{it.desc}</span>
+                {it.desc ? <span className="phd-resource-desc">{it.desc}</span> : null}
               </a>
             ))}
           </div>
@@ -1650,7 +1707,7 @@ const STUB_PLANS = {
   'outline': ['Collapsible tree', 'Drop Insights into slots', 'Promote to Deliverable section'],
   'latex': ['Render math as you type', 'Snippet library', 'Copy as image / TeX'],
   'draft-locker': ['Versioned chapter drafts', 'Diff between versions', 'Roll back any change'],
-  'gantt': ['Base → hypertrophy → peak timeline', 'Critical-path highlighting', 'Drag to reschedule'],
+  'gantt': ['Shop → prep → cook timeline', 'Critical-path highlighting', 'Drag to reschedule'],
   'mood': ['Daily slider', 'Trend graph', 'Correlate with productive days'],
   'sleep': ['Sleep duration vs. word output', 'Energy heatmap', 'Apple Health import'],
   'focus': ['Curated ambient playlists', 'Focus session timer', 'Auto-pause on Pomodoro break'],

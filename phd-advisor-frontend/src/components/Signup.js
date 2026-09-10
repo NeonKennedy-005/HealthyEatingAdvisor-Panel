@@ -89,7 +89,7 @@ const Signup = ({ onNavigateToLogin, onNavigateToHome }) => {
     }
 
     if (!formData.careerFocus) {
-      newErrors.careerFocus = 'Please choose internship or full-time';
+      newErrors.careerFocus = 'Please choose a food goal';
     }
     
     setErrors(newErrors);

@@ -8,12 +8,12 @@ const STEPS = [
   {
     title: 'Welcome to your Food Canvas',
     icon: 'flag',
-    body: 'This is your healthy-eating workspace. Two views — Insights (highlights from your chats) and Workspace (a customizable dashboard of widgets). It starts empty so you can build it the way you want.',
+    body: 'Food Canvas is Insights, Workspace, and Documents next to Chat. Start with Food Resources, a Produce Board (Veg I like / Veg to try / Fruit I like / Fruit to try), a Shopping List, and Goals.',
   },
   {
     title: 'Add widgets from the palette',
     icon: 'plus',
-    body: `Click "Add widget" on the Workspace view, or hit ${MOD}+K and search. There are 30+ widgets — meal plans, produce trackers, book notes, habit logs, plus challenge widgets that push back on vague goals.`,
+    body: `Pick the Food Canvas preset, or click Add widget / ${MOD}+K. Extra widgets are optional — keep the board small if a long palette feels like too much.`,
   },
   {
     title: 'Make it yours',
