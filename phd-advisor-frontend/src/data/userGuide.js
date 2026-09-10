@@ -49,8 +49,8 @@ Click an advisor's response to **reply directly to them** and continue one-on-on
 
 ## Tips
 - Share goals, time constraints, and preferences
-- Upload a knowledge article from \`knowledge/\` for sharper, document-grounded answers
-- Prefer concrete requests: "easy weekday lunches" beats "be healthier"`,
+- Prefer concrete requests: "easy weekday lunches" beats "be healthier"
+- You can upload a food article or notes from chat so advisors can ground their answers in that document`
   },
   {
     id: 'profile',
@@ -73,9 +73,13 @@ Open the profile walkthrough from the settings or user menu.`,
     icon: 'LayoutDashboard',
     content: `# Food Canvas
 
-The Canvas is a workspace for notes, plans, and progress around your food goals. First draft widgets still carry some template labels — use them as sticky notes for meal ideas, grocery lists, and questions for advisors.
+**Food Canvas** is the name for the three dashboard tabs next to Chat:
 
-Ask advisors in chat, then park useful answers on the Canvas for later.`,
+- **Insights** — example healthy-eating goals you can mark as a Success (these starters are not generated from your chats)
+- **Workspace** — widgets you choose, including Food Resources, a produce board (Veg I like / Veg to try / Fruit I like / Fruit to try), a Shopping List, and Goals
+- **Documents** — longer drafts you can export as Markdown, HTML, or Print / PDF
+
+Open a document draft before using Export. Ask advisors in Chat, then park useful answers on Food Canvas.`,
   },
   {
     id: 'safety',

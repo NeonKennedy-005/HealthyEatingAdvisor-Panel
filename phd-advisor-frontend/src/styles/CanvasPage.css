@@ -568,7 +568,9 @@
   color: var(--canvas-text);
   line-height: 1.5;
 }
-.canvas-page-with-sidebar .insights-task-row.task-completed .insights-task-text,
+.canvas-page-with-sidebar .insights-task-row.task-completed .insights-task-text {
+  color: var(--canvas-text-2);
+}
 .canvas-page-with-sidebar .insights-task-row.task-abandoned .insights-task-text {
   text-decoration: line-through;
   color: var(--canvas-text-3);
@@ -640,9 +642,8 @@
   position: relative;
 }
 .canvas-page-with-sidebar .insight-task.task-completed .insight-task-text {
-  text-decoration: line-through;
-  color: var(--canvas-text-3);
-  opacity: 0.7;
+  color: var(--canvas-text-2);
+  opacity: 0.9;
 }
 .canvas-page-with-sidebar .insight-task.task-abandoned .insight-task-text {
   text-decoration: line-through;
@@ -3009,6 +3010,10 @@ body[data-canvas-theme="light"] .canvas-modal-backdrop .critic-meter .bar { back
 }
 
 /* Export dropdown — uses native <details> for zero-state-management */
+.canvas-page-with-sidebar .canvas-export-menu {
+  position: relative;
+  z-index: 20;
+}
 .canvas-page-with-sidebar .canvas-export-menu summary {
   list-style: none;
 }

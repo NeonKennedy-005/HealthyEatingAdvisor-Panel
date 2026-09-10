@@ -4,9 +4,12 @@ import { useTheme } from '../contexts/ThemeContext';
 import { useAppConfig } from '../contexts/AppConfigContext';
 import Sidebar from '../components/Sidebar';
 import AppHeader from '../components/AppHeader';
+import ProfileWalkthrough from '../components/ProfileWalkthrough';
+import AccountModal from '../components/AccountModal';
+import ClearDataModal from '../components/ClearDataModal';
 import Icon from '../components/canvas/CanvasIcon';
 import {
-  INSIGHTS, WIDGET_CATALOG, DEFAULT_LAYOUT, EMPTY_STATE, WORKSPACE_PRESETS,
+  INSIGHTS, WIDGET_CATALOG, DEFAULT_LAYOUT, EMPTY_STATE, WORKSPACE_PRESETS, CATEGORIES,
 } from '../components/canvas/canvasData';
 import {
   BibliographyWidget, KanbanWidget, PomodoroWidget, WritingWidget,
@@ -115,7 +118,7 @@ const INSIGHT_CATEGORIES = [
   { id: 'completed', label: 'Completed' },
   { id: 'abandoned', label: 'Abandoned' },
   { id: 'pinned', label: 'Pinned' },
-  { id: 'high', label: 'High confidence' },
+  { id: 'high', label: 'High confidence', hint: 'Example starters scored as a strong place to begin — not from your chats' },
   { id: 'progress', label: 'Progress' },
   { id: 'theory', label: 'Theory' },
   { id: 'literature', label: 'Literature' },
@@ -143,13 +146,13 @@ const confidenceTier = (c) => c >= 75 ? 'high' : c >= 60 ? 'med' : 'low';
 const TASK_STATUSES = [
   { id: 'open', label: 'Open', color: 'var(--canvas-text-3)', icon: 'sparkles' },
   { id: 'in-progress', label: 'In progress', color: '#3B82F6', icon: 'graph' },
-  { id: 'completed', label: 'Completed', color: '#10B981', icon: 'check' },
+  { id: 'completed', label: 'Success', color: '#10B981', icon: 'check' },
   { id: 'abandoned', label: 'Abandoned', color: 'var(--canvas-text-4)', icon: 'x' },
 ];
 const TASK_STATUS_KEY = 'canvas-task-status-v1';
 const taskKey = (insId, idx) => `${insId}::${idx}`;
 
-function InsightsView({ widgetStates, setWidgetStates, onNavigateToChat }) {
+function InsightsView({ widgetStates, setWidgetStates, layout, setLayout, onNavigateToChat, onShowWorkspace }) {
   const [pinned, setPinned] = useState(() => new Set(INSIGHTS.filter(i => i.pinned).map(i => i.id)));
   const [taskStatuses, setTaskStatuses] = useState(() => {
     try { return JSON.parse(localStorage.getItem(TASK_STATUS_KEY) || '{}'); } catch { return {}; }
@@ -172,7 +175,7 @@ function InsightsView({ widgetStates, setWidgetStates, onNavigateToChat }) {
   const setTaskStatus = (insId, idx, status) => {
     setTaskStatuses(prev => ({ ...prev, [taskKey(insId, idx)]: status }));
     const lbl = TASK_STATUSES.find(s => s.id === status)?.label || status;
-    window.dispatchEvent(new CustomEvent('canvas-toast', { detail: { msg: `Task marked ${lbl}`, kind: 'success' } }));
+    window.dispatchEvent(new CustomEvent('canvas-toast', { detail: { msg: `Goal marked ${lbl}`, kind: 'success' } }));
   };
 
   // Roll up to a card-level status: completed if all tasks done, abandoned if all abandoned,
@@ -211,18 +214,49 @@ function InsightsView({ widgetStates, setWidgetStates, onNavigateToChat }) {
     return plain.length > 80 ? plain.slice(0, 77) + '…' : plain;
   };
 
+  const ensureProduceBoard = () => {
+    const kanban = widgetStates.kanban || EMPTY_STATE.kanban;
+    if (setLayout && !(layout || []).some(w => w.type === 'kanban')) {
+      setLayout(l => [...l, { id: 'w-produce-' + Date.now(), type: 'kanban', size: 'L' }]);
+    }
+    return kanban;
+  };
+
   const sendToKanban = (ins) => {
     if (!setWidgetStates) return;
-    const kanban = widgetStates.kanban || EMPTY_STATE.kanban;
+    const kanban = ensureProduceBoard();
     const card = {
       id: 'k' + Date.now(),
-      col: 'todo',
+      col: 'veg-try',
       title: insightToTaskTitle(ins),
       priority: 'med',
       meta: `from Insights · ${ins.title}`,
     };
-    setWidgetStates(s => ({ ...s, kanban: { ...kanban, cards: [...kanban.cards, card] } }));
-    window.dispatchEvent(new CustomEvent('canvas-toast', { detail: { msg: 'Sent to Kanban (To Do)', kind: 'success' } }));
+    setWidgetStates(s => ({ ...s, kanban: { ...kanban, cards: [...(kanban.cards || []), card] } }));
+    window.dispatchEvent(new CustomEvent('canvas-toast', { detail: { msg: 'Sent to Produce Board (Veg to try)', kind: 'success' } }));
+    if (onShowWorkspace) onShowWorkspace();
+  };
+
+  const sendToGoals = (ins) => {
+    if (!setWidgetStates) return;
+    const goals = widgetStates.goals || EMPTY_STATE.goals;
+    const active = (goals.items || []).filter(g => !g.successAt);
+    if (active.length >= 3) {
+      window.dispatchEvent(new CustomEvent('canvas-toast', { detail: { msg: 'Ideally no more than three goals at a time.', kind: 'danger' } }));
+      return;
+    }
+    const item = {
+      id: 'g' + Date.now(),
+      label: insightToTaskTitle(ins),
+      note: '',
+      progress: 0,
+    };
+    setWidgetStates(s => ({ ...s, goals: { ...goals, items: [...(goals.items || []), item] } }));
+    if (setLayout && !(layout || []).some(w => w.type === 'goals')) {
+      setLayout(l => [...l, { id: 'w-goals-' + Date.now(), type: 'goals', size: 'M' }]);
+    }
+    window.dispatchEvent(new CustomEvent('canvas-toast', { detail: { msg: 'Added to Goals', kind: 'success' } }));
+    if (onShowWorkspace) onShowWorkspace();
   };
 
   // TODO(LLM): real refresh hits the orchestrator and re-synthesizes insights.
@@ -289,7 +323,7 @@ function InsightsView({ widgetStates, setWidgetStates, onNavigateToChat }) {
         <div className="page-header">
           <div>
             <h1 className="page-title">Insights</h1>
-            <div className="page-sub">AI-synthesized from your research conversations.</div>
+            <div className="page-sub">Example goals you can choose — not generated from your chats yet.</div>
           </div>
         </div>
         <div className="empty-cell">
@@ -306,7 +340,7 @@ function InsightsView({ widgetStates, setWidgetStates, onNavigateToChat }) {
       <div className="page-header">
         <div>
           <h1 className="page-title">Insights</h1>
-          <div className="page-sub">AI-synthesized from your research conversations.</div>
+          <div className="page-sub">Example goals you can choose — not generated from your chats yet.</div>
         </div>
       </div>
 
@@ -314,7 +348,7 @@ function InsightsView({ widgetStates, setWidgetStates, onNavigateToChat }) {
       <div className="insights-stats">
         <div className="insights-stat">
           <span className="insights-stat-value">{stats.completed}/{stats.taskTotal}</span>
-          <span className="insights-stat-label">tasks done</span>
+          <span className="insights-stat-label">successes</span>
         </div>
         <div className="insights-stat insights-stat-progress">
           <div className="insights-progress-bar">
@@ -333,7 +367,7 @@ function InsightsView({ widgetStates, setWidgetStates, onNavigateToChat }) {
         </div>
         <div className="insights-stat">
           <span className="insights-stat-value">{stats.avgConf}%</span>
-          <span className="insights-stat-label">avg confidence</span>
+          <span className="insights-stat-label" title="How strong this example is as a starting point. Not from your chats.">avg confidence</span>
         </div>
         <span style={{ flex: 1 }}/>
         <span className="insights-stat-update">
@@ -352,7 +386,7 @@ function InsightsView({ widgetStates, setWidgetStates, onNavigateToChat }) {
           <Icon name="layout" size={12}/>Cards
         </button>
         <button className={viewMode === 'tasks' ? 'active' : ''} onClick={() => setViewMode('tasks')}>
-          <Icon name="task" size={12}/>Tasks
+          <Icon name="task" size={12}/>Goals
         </button>
       </div>
 
@@ -376,9 +410,14 @@ function InsightsView({ widgetStates, setWidgetStates, onNavigateToChat }) {
             );
           })}
         </div>
-        <select className="select" style={{ width: 'auto', padding: '4px 8px', fontSize: 11, fontFamily: 'var(--canvas-mono)' }}
-          value={sortBy} onChange={e => setSortBy(e.target.value)}>
-          <option value="confidence">↓ confidence</option>
+        <select
+          className="select"
+          style={{ width: 'auto', padding: '4px 8px', fontSize: 11, fontFamily: 'var(--canvas-mono)' }}
+          value={sortBy}
+          onChange={e => setSortBy(e.target.value)}
+          title="Confidence is how strong an example looks as a starting point. These cards are not from your chats."
+        >
+          <option value="confidence">↓ confidence (example strength)</option>
           <option value="recent">↓ recent</option>
           <option value="progress">↓ progress</option>
         </select>
@@ -416,7 +455,7 @@ function InsightsView({ widgetStates, setWidgetStates, onNavigateToChat }) {
           return (
             <div className="empty-cell">
               <Icon name="task" size={28} style={{ color: 'var(--canvas-text-4)' }}/>
-              <div style={{ fontSize: 14, color: 'var(--canvas-text-2)', fontWeight: 500 }}>No tasks match this filter</div>
+              <div style={{ fontSize: 14, color: 'var(--canvas-text-2)', fontWeight: 500 }}>No goals match this filter</div>
               <button className="btn btn-ghost" onClick={() => setFilter('all')}>Show all</button>
             </div>
           );
@@ -455,8 +494,11 @@ function InsightsView({ widgetStates, setWidgetStates, onNavigateToChat }) {
                     </button>
                     <span className="insights-task-text" dangerouslySetInnerHTML={{ __html: text }}/>
                   </div>
-                  <button className="chip" onClick={() => sendToKanban(ins)} title="Send this section's open tasks to Kanban">
-                    <Icon name="task" size={11}/>Kanban
+                  <button className="chip" onClick={() => sendToKanban(ins)} title="Send this to Produce Board (Veg to try)">
+                    <Icon name="task" size={11}/>Produce Board
+                  </button>
+                  <button className="chip" onClick={() => sendToGoals(ins)} title="Add this as a Goal">
+                    <Icon name="bullseye" size={11}/>Goals
                   </button>
                   {menuOpen && (
                     <div className="insight-status-menu" onMouseLeave={() => setOpenStatusMenu(null)}>
@@ -511,8 +553,8 @@ function InsightsView({ widgetStates, setWidgetStates, onNavigateToChat }) {
                 {rollup.total > 0 && (
                   <div className="insight-progress">
                     <div className="insight-progress-meta">
-                      <span className="insight-progress-count">{rollup.done}/{rollup.total} tasks</span>
-                      {rollup.state === 'completed' && <span className="insight-progress-badge done">✓ Resolved</span>}
+                      <span className="insight-progress-count">{rollup.done}/{rollup.total} goals</span>
+                      {rollup.state === 'completed' && <span className="insight-progress-badge done">✓ Success</span>}
                       {rollup.state === 'abandoned' && <span className="insight-progress-badge abandoned">Abandoned</span>}
                       {rollup.state === 'in-progress' && <span className="insight-progress-badge inprog">In progress</span>}
                     </div>
@@ -565,7 +607,7 @@ function InsightsView({ widgetStates, setWidgetStates, onNavigateToChat }) {
                 {/* Detail panel — quotes from sources, only when expanded */}
                 {isExpanded && ins.quotes && (
                   <div className="insight-detail">
-                    <div className="insight-detail-head">Source quotes · {ins.sources} {ins.sources === 1 ? 'source' : 'sources'}</div>
+                    <div className="insight-detail-head">Example notes — not from your chats</div>
                     {ins.quotes.map((q, i) => (
                       <div key={i} className="insight-quote">{q}</div>
                     ))}
@@ -584,8 +626,11 @@ function InsightsView({ widgetStates, setWidgetStates, onNavigateToChat }) {
                   <button className="chip" onClick={() => askFollowUp(ins)} title="Open this insight in a new chat session">
                     <Icon name="message" size={11}/>Ask follow-up
                   </button>
-                  <button className="chip" onClick={() => sendToKanban(ins)} title="Add all open tasks from this insight to your Kanban (To Do)">
-                    <Icon name="task" size={11}/>Add to Kanban
+                  <button className="chip" onClick={() => sendToKanban(ins)} title="Add to Produce Board (Veg to try) on Workspace">
+                    <Icon name="task" size={11}/>Add to Produce Board
+                  </button>
+                  <button className="chip" onClick={() => sendToGoals(ins)} title="Add to Goals on Workspace">
+                    <Icon name="bullseye" size={11}/>Add to Goals
                   </button>
                   <button className="chip" onClick={() => toggleExpand(ins.id)}>
                     <Icon name="expand" size={11}/>{isExpanded ? 'Collapse' : 'Source quotes'}
@@ -717,8 +762,8 @@ function WorkspaceView({ openModal, layout, setLayout, widgetStates, setWidgetSt
     <>
       <div className="page-header">
         <div>
-          <h1 className="page-title">Workspace</h1>
-          <div className="page-sub">{layout.length} widgets · {layout.filter(w => w.critic).length} anti-yes-man · drag headers to reorder, click size pill to resize</div>
+          <h1 className="page-title">Food Canvas</h1>
+          <div className="page-sub">{layout.length} widgets · Food Resources, Produce Board, Shopping List, Goals · drag headers to reorder</div>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
           <button className="btn btn-ghost" onClick={reset} title="Reset layout"><Icon name="reset" size={13}/>Reset</button>
@@ -822,6 +867,9 @@ const CanvasPage = ({ user, authToken, onNavigateToHome, onNavigateToChat, onSig
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [tourForceShow, setTourForceShow] = useState(0);
+  const [showProfileForm, setShowProfileForm] = useState(false);
+  const [showAccount, setShowAccount] = useState(false);
+  const [showClearData, setShowClearData] = useState(false);
 
   const [layout, setLayout] = useState(() => {
     try {
@@ -925,7 +973,8 @@ const CanvasPage = ({ user, authToken, onNavigateToHome, onNavigateToChat, onSig
       const meta = WIDGET_CATALOG.find(m => m.type === w.type);
       if (!meta) return;
       const cat = meta.cat;
-      (groups[cat] ||= { id: cat, label: cat, items: [] }).items.push({
+      const catLabel = CATEGORIES.find(c => c.id === cat)?.label || cat;
+      (groups[cat] ||= { id: cat, label: catLabel, items: [] }).items.push({
         id: w.id,
         label: meta.name,
         icon: meta.icon,
@@ -934,7 +983,7 @@ const CanvasPage = ({ user, authToken, onNavigateToHome, onNavigateToChat, onSig
       });
     });
     // Order: critic last
-    const order = ['research', 'writing', 'project', 'wellness', 'career', 'data', 'practical', 'critic'];
+    const order = ['research', 'writing', 'project', 'wellness', 'food', 'data', 'practical', 'critic'];
     return order.map(c => groups[c]).filter(Boolean);
   }, [layout]);
 
@@ -1013,6 +1062,9 @@ const CanvasPage = ({ user, authToken, onNavigateToHome, onNavigateToChat, onSig
         widgetGroups={widgetGroups}
         deliverableProjects={deliverableProjects}
         insightSections={insightSections}
+        onOpenProfile={() => setShowProfileForm(true)}
+        onOpenAccount={() => setShowAccount(true)}
+        onOpenClearData={() => setShowClearData(true)}
       />
       <div className={`canvas-main-area ${isSidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
         <div className="canvas-app-shell">
@@ -1034,7 +1086,7 @@ const CanvasPage = ({ user, authToken, onNavigateToHome, onNavigateToChat, onSig
             </button>
           </AppHeader>
           <div className="canvas-content">
-            {view === 'insights' && <InsightsView widgetStates={widgetStates} setWidgetStates={setWidgetStates} onNavigateToChat={onNavigateToChat}/>}
+            {view === 'insights' && <InsightsView widgetStates={widgetStates} setWidgetStates={setWidgetStates} layout={layout} setLayout={setLayout} onNavigateToChat={onNavigateToChat} onShowWorkspace={() => setView('workspace')}/>}
             {view === 'workspace' && <WorkspaceView openModal={openModal} layout={layout} setLayout={setLayout} widgetStates={widgetStates} setWidgetStates={setWidgetStates}/>}
             {view === 'deliverables' && <DeliverablesView allStates={widgetStates}/>}
           </div>
@@ -1044,6 +1096,27 @@ const CanvasPage = ({ user, authToken, onNavigateToHome, onNavigateToChat, onSig
       <ToastStack/>
       <CanvasWelcomeTour key={tourForceShow} forceShow={tourForceShow > 0}/>
       <ShortcutHint/>
+      {showProfileForm && (
+        <ProfileWalkthrough
+          authToken={authToken}
+          onClose={() => setShowProfileForm(false)}
+        />
+      )}
+      {showAccount && (
+        <AccountModal
+          user={user}
+          authToken={authToken}
+          onClose={() => setShowAccount(false)}
+          onAccountUpdated={() => setShowAccount(false)}
+          onAccountDeleted={() => { setShowAccount(false); onSignOut?.(); }}
+        />
+      )}
+      {showClearData && (
+        <ClearDataModal
+          authToken={authToken}
+          onClose={() => setShowClearData(false)}
+        />
+      )}
     </div>
   );
 };

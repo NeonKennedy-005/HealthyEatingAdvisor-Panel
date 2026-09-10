@@ -47,39 +47,59 @@
   ],
   "examplePromptCards": [
     {
-      "title": "How do I get started?",
+      "title": "Real Food",
       "icon": "",
       "prompts": [
-        "I know I'm not eating in a healthy way but I don't know what to do about it.",
         "What is clean eating?",
-        "How can I get started eating more vegetables?"
+        "How can I get started eating more vegetables?",
+        "What can I pack for lunch?"
+      ]
+    },
+    {
+      "title": "Let's learn about you",
+      "icon": "",
+      "prompts": [
+        "Where do I start?",
+        "I know I'm not eating in a healthy way but I don't know what to do about it.",
+        "Ask me why I want to improve my diet",
+        "Ask me what is worrying me the most about my diet"
       ]
     },
     {
       "title": "Why healthy eating?",
       "icon": "",
       "prompts": [
-        "Is clean eating really more enjoyable?",
-        "How do \"real foods\" improve health?",
-        "What are some benefits of fruit?"
+        "What are the benefits of real food?",
+        "How can I eat less sugar?",
+        "What's wrong with processed food?",
+        "Is clean eating really more enjoyable?"
       ]
     },
     {
-      "title": "Easy food prep",
+      "title": "Try New Foods",
       "icon": "",
       "prompts": [
-        "What can I pack for lunch?",
+        "What is tahini?",
+        "What does jicama taste like, and do I have to cook it?",
+        "What is kimchi, and can I eat it straight out of the jar without cooking it?"
+      ]
+    },
+    {
+      "title": "Easy Food Prep",
+      "icon": "",
+      "prompts": [
+        "How can I eat less sugar? What can I do with frozen fruit besides making a smoothie?",
+        "What's a daikon radish? Can I roast vegetables on a baking sheet without buying expensive kitchen equipment?",
+        "What can I do with frozen fruit? Instead of making a complicated omelet, can I just fry eggs and cook veg in the same pan?"
+      ]
+    },
+    {
+      "title": "Superfood",
+      "icon": "",
+      "prompts": [
         "What's an easy superfood?",
-        "What do I do with frozen fruit?"
-      ]
-    },
-    {
-      "title": "The science",
-      "icon": "",
-      "prompts": [
-        "How do you know if a food is nutrient dense?",
-        "Why is processed food such a big problem?",
-        "What does it mean for a food to have high enzymes?"
+        "What does it mean for a food to have high enzymes?",
+        "What's a good healthy eating book for beginners?"
       ]
     }
   ],

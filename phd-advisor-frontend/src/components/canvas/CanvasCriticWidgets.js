@@ -142,7 +142,7 @@ export function ScopeRealismWidget({ state, openModal }) {
           className="btn"
           title="Open Scope Realism in the main chat (history lives there)"
           onClick={() => handoffToChat('Scope Realism',
-            `Run a brutal feasibility check on my goal: "${state.target || 'my current internship search goal'}". Be specific about what's at risk.`)}
+            `Run a brutal feasibility check on my goal: "${state.target || 'my current clean-eating goal'}". Be specific about what's at risk.`)}
         >
           <Icon name="message" size={13}/>Open in chat
         </button>
@@ -158,43 +158,43 @@ export function ScopeRealismWidget({ state, openModal }) {
 const REVIEW_TEMPLATES = [
   {
     severity: 8,
-    major: 'The search plan states a goal ("land an internship") before defining what success looks like. You never specify the measurable target — which role family, how many tailored apps/week, by when — so there is no way to tell if the plan is working or when to change it.',
+    major: 'The eating plan states a goal ("eat healthier") before defining what success looks like. You never specify the measurable target — which meals, how many produce servings/week, by when — so there is no way to tell if the plan is working or when to change it.',
     minor: [
-      'Weekly volume is described as "a lot of applications" without a concrete count or quality bar.',
-      'No rule for when to pause spray-and-pray and rewrite materials instead.',
-      'Networking is mentioned once with no outreach cadence or tracking.',
-      'No Friday review is scheduled — response rate will stay invisible.',
+      'Weekly volume is described as "more vegetables" without a concrete count or quality bar.',
+      'No rule for when to pause new recipes and reuse a shortlist instead.',
+      'Snack strategy is mentioned once with no prep cadence or tracking.',
+      'No Friday review is scheduled — leftover waste will stay invisible.',
     ],
     suggestions: [
-      'Add one sentence naming the target: e.g. "6 tailored analytics apps/week through April 15."',
-      'Define what "quality application" means (resume match + short note).',
-      'Add a weekly pipeline review with callback rate.',
+      'Add one sentence naming the target: e.g. "5 produce-forward dinners/week through April 15."',
+      'Define what "quality meal" means (real-food ingredients + one produce item).',
+      'Add a weekly kitchen review with homemade-meal count.',
     ],
   },
   {
     severity: 7,
-    major: 'You claim this approach is "optimal for getting interviews." That word is doing too much work. The plan is also compatible with worse outcomes (generic resumes, ignored follow-ups, burnout). Without a way to check whether callbacks improve, "optimal" is untestable.',
+    major: 'You claim this approach is "optimal for eating clean." That word is doing too much work. The plan is also compatible with worse outcomes (generic takeout, skipped prep, burnout). Without a way to check whether homemade meals improve, "optimal" is untestable.',
     minor: [
-      'The channel mix is justified by "everyone uses LinkedIn" rather than by your major and fair calendar.',
+      'The shopping mix is justified by "everyone buys salad kits" rather than by your kitchen time and season.',
       'No statement of what would make you change the plan.',
-      'A search with no tracked numbers is a red flag — you cannot audit it later.',
+      'A meal plan with no tracked numbers is a red flag — you cannot audit it later.',
     ],
     suggestions: [
       'Replace "optimal" with a specific target the plan either hits or misses.',
-      'List 1–2 signals (0 callbacks after 15 apps, missed apply blocks) that trigger a change.',
+      'List 1–2 signals (0 homemade lunches after 5 days, missed prep blocks) that trigger a change.',
     ],
   },
   {
     severity: 9,
     major: 'This reads like a wish list, not a plan. There is no number. There is no timeframe. The strongest claim is that you want to "find something good" — which is the lowest possible bar. If you actually care about the result, lead with the measurable goal, not the vibe.',
     minor: [
-      'The word "networking" appears without a single outreach message drafted.',
-      '"Dream company" is undefined; name 10 real targets.',
-      'No mention of resume quality, despite it driving most first-round outcomes.',
+      'The word "meal prep" appears without a single shopping list drafted.',
+      '"Dream recipe" is undefined; name 10 real meals.',
+      'No mention of pantry staples, despite them driving most weeknight outcomes.',
     ],
     suggestions: [
       'Lead sentence: "By <date> I will <specific, measurable result>."',
-      'Cut "I want a good internship" entirely. Replace it with role lane, volume, and a date.',
+      'Cut "I want to eat healthier" entirely. Replace it with meal lane, volume, and a date.',
     ],
   },
 ];
