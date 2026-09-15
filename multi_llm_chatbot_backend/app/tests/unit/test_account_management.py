@@ -17,9 +17,11 @@ from app.api.routes.auth import (  # noqa: E402
     change_password,
     delete_account,
     guest_login,
+    login,
+    signup,
     update_profile,
 )
-from app.models.user import User  # noqa: E402
+from app.models.user import User, UserCreate, UserLogin  # noqa: E402
 
 
 FAKE_USER_ID = ObjectId()
@@ -300,3 +302,92 @@ class TestDeleteAccount(unittest.TestCase):
         db.users.delete_one.assert_not_called()
         db.chat_sessions.delete_many.assert_not_called()
         db.phd_canvases.delete_many.assert_not_called()
+
+
+# ------------------------------------------------------------------
+# Email normalization
+# ------------------------------------------------------------------
+
+
+class TestEmailNormalization(unittest.TestCase):
+
+    def test_login_strips_and_lowercases_email(self):
+        creds = UserLogin(email="  Heidi@Example.COM ", password="Password1")
+        self.assertEqual(str(creds.email), "heidi@example.com")
+
+    def test_signup_strips_and_lowercases_email(self):
+        body = UserCreate(
+            firstName="Heidi",
+            lastName="B",
+            email="  Heidi@Example.COM ",
+            password="Password1",
+        )
+        self.assertEqual(str(body.email), "heidi@example.com")
+
+
+# ------------------------------------------------------------------
+# POST /auth/login
+# ------------------------------------------------------------------
+
+
+@patch("app.api.routes.auth.create_access_token", return_value="tok")
+@patch("app.api.routes.auth.get_database")
+@patch("app.api.routes.auth.verify_password")
+@patch("app.api.routes.auth.get_user_by_email")
+class TestLogin(unittest.TestCase):
+
+    def test_unknown_email(self, mock_get, mock_verify, mock_get_db, _token):
+        mock_get.return_value = None
+        with self.assertRaises(HTTPException) as ctx:
+            asyncio.run(login(UserLogin(email="nobody@example.com", password="Password1")))
+        self.assertEqual(ctx.exception.status_code, 401)
+        self.assertIn("No account found", ctx.exception.detail)
+        mock_verify.assert_not_called()
+
+    def test_wrong_password(self, mock_get, mock_verify, mock_get_db, _token):
+        mock_get.return_value = _make_fake_user()
+        mock_verify.return_value = False
+        with self.assertRaises(HTTPException) as ctx:
+            asyncio.run(login(UserLogin(email="test@example.com", password="wrongpass")))
+        self.assertEqual(ctx.exception.status_code, 401)
+        self.assertIn("Incorrect password", ctx.exception.detail)
+
+    def test_success(self, mock_get, mock_verify, mock_get_db, _token):
+        mock_get.return_value = _make_fake_user()
+        mock_verify.return_value = True
+        db = _mock_db()
+        mock_get_db.return_value = db
+        result = asyncio.run(login(UserLogin(email="test@example.com", password="Password1")))
+        self.assertEqual(result.access_token, "tok")
+        self.assertEqual(result.user.email, "test@example.com")
+
+
+# ------------------------------------------------------------------
+# POST /auth/signup
+# ------------------------------------------------------------------
+
+
+@patch("app.api.routes.auth.get_user_by_email")
+class TestSignup(unittest.TestCase):
+
+    def test_already_registered(self, mock_get):
+        mock_get.return_value = _make_fake_user()
+        with self.assertRaises(HTTPException) as ctx:
+            asyncio.run(signup(UserCreate(
+                firstName="A", lastName="B",
+                email="test@example.com", password="Password1",
+            )))
+        self.assertEqual(ctx.exception.status_code, 400)
+        self.assertIn("already registered", ctx.exception.detail.lower())
+        self.assertIn("sign in", ctx.exception.detail.lower())
+
+    def test_guest_domain_rejected(self, mock_get):
+        mock_get.return_value = None
+        with self.assertRaises(HTTPException) as ctx:
+            asyncio.run(signup(UserCreate(
+                firstName="A", lastName="B",
+                email="guest-abc@guests.healthyeating.ai",
+                password="Password1",
+            )))
+        self.assertEqual(ctx.exception.status_code, 400)
+        self.assertIn("guest", ctx.exception.detail.lower())

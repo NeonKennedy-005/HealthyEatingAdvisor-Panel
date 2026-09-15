@@ -105,7 +105,7 @@ export const INSIGHTS = [
     icon: 'arrow',
     category: 'action',
     confidence: 85,
-    summary: 'I asked the Panel for goals but modified them.',
+    summary: '',
     bullets: [
       'Add one vegetable each day for a week.',
       'Add one fruit each day for a week.',
@@ -119,7 +119,6 @@ export const INSIGHTS = [
     sources: 7,
     updatedMinutesAgo: 9,
     quotes: [
-      'Example Goals — I asked the Panel for goals but modified them.',
       'Add one vegetable each day for a week.',
       'Replace one junk food with a healthy snack.',
     ],

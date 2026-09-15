@@ -424,7 +424,7 @@ const Sidebar = ({
                 if (groups.length === 0) {
                   return (
                     <div className="no-sessions">
-                      {searchTerm ? 'No widgets match' : 'Workspace is empty — add widgets'}
+                      {searchTerm ? 'No widgets match' : 'Food Canvas is empty — add widgets'}
                     </div>
                   );
                 }

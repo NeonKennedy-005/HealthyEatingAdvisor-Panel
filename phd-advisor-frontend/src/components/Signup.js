@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Eye, EyeOff, Mail, Lock, User, ArrowRight, Shield, Globe } from 'lucide-react';
 import { useAppConfig } from '../contexts/AppConfigContext';
-import { persistAuth } from '../utils/authStorage';
+import { persistAuth, getApiBaseUrl, formatApiDetail } from '../utils/authStorage';
 import '../styles/Signup.css';
 
 const Signup = ({ onNavigateToLogin, onNavigateToHome }) => {
@@ -104,7 +104,7 @@ const Signup = ({ onNavigateToLogin, onNavigateToHome }) => {
     setIsLoading(true);
     
     try {
-      const response = await fetch(`${process.env.REACT_APP_API_URL}/auth/signup`, {
+      const response = await fetch(`${getApiBaseUrl()}/auth/signup`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -112,7 +112,7 @@ const Signup = ({ onNavigateToLogin, onNavigateToHome }) => {
         body: JSON.stringify({
           firstName: formData.firstName,
           lastName: formData.lastName,
-          email: formData.email,
+          email: formData.email.trim(),
           password: formData.password,
           academicStage: formData.academicStage,
           researchArea: formData.researchArea,
@@ -126,7 +126,12 @@ const Signup = ({ onNavigateToLogin, onNavigateToHome }) => {
         persistAuth(data.user, data.access_token);
         onNavigateToHome?.(data.user, data.access_token);
       } else {
-        setErrors({ submit: data.detail || 'Signup failed. Please try again.' });
+        const message = formatApiDetail(data.detail, 'Signup failed. Please try again.');
+        const already = /already registered/i.test(message);
+        setErrors({
+          submit: message,
+          ...(already ? { email: 'This email is already registered. Sign in instead.' } : {}),
+        });
       }
       
     } catch (error) {
@@ -423,7 +428,7 @@ const Signup = ({ onNavigateToLogin, onNavigateToHome }) => {
               className="link-btn"
               onClick={async () => {
                 try {
-                  const response = await fetch(`${process.env.REACT_APP_API_URL || ''}/auth/guest`, {
+                  const response = await fetch(`${getApiBaseUrl()}/auth/guest`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                   });

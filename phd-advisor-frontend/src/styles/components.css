@@ -539,8 +539,14 @@
 
 .category-title {
   font-size: 16px;
-  font-weight: 600;
+  font-weight: 400;
+  font-style: italic;
   margin: 0;
+}
+
+.category-title strong {
+  font-weight: 700;
+  font-style: italic;
 }
 
 .suggestion-buttons {

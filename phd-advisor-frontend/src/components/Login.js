@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Eye, EyeOff, Mail, Lock, ArrowRight } from 'lucide-react';
 import { useAppConfig } from '../contexts/AppConfigContext';
-import { persistAuth, getApiBaseUrl } from '../utils/authStorage';
+import { persistAuth, getApiBaseUrl, formatApiDetail } from '../utils/authStorage';
 import CopyrightNotice from './CopyrightNotice';
 import '../styles/Login.css';
 
@@ -42,8 +42,6 @@ const Login = ({ onNavigateToSignup, onNavigateToHome }) => {
 
     if (!formData.password) {
       newErrors.password = 'Password is required';
-    } else if (formData.password.length < 6) {
-      newErrors.password = 'Password must be at least 6 characters';
     }
 
     setErrors(newErrors);
@@ -63,7 +61,7 @@ const Login = ({ onNavigateToSignup, onNavigateToHome }) => {
         persistAuth(data.user, data.access_token);
         onNavigateToHome?.(data.user, data.access_token);
       } else {
-        setErrors({ submit: data.detail || 'Could not start a guest session.' });
+        setErrors({ submit: formatApiDetail(data.detail, 'Could not start a guest session.') });
       }
     } catch (error) {
       console.error('Guest login error:', error);
@@ -87,7 +85,7 @@ const Login = ({ onNavigateToSignup, onNavigateToHome }) => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          email: formData.email,
+          email: formData.email.trim(),
           password: formData.password
         }),
       });
@@ -98,7 +96,7 @@ const Login = ({ onNavigateToSignup, onNavigateToHome }) => {
         persistAuth(data.user, data.access_token);
         onNavigateToHome?.(data.user, data.access_token);
       } else {
-        setErrors({ submit: data.detail || 'Login failed. Please try again.' });
+        setErrors({ submit: formatApiDetail(data.detail, 'Login failed. Please try again.') });
       }
 
     } catch (error) {
@@ -195,7 +193,13 @@ const Login = ({ onNavigateToSignup, onNavigateToHome }) => {
             </div>
 
             <div className="form-actions">
-              <button type="button" className="forgot-password">
+              <button
+                type="button"
+                className="forgot-password"
+                onClick={() => setErrors({
+                  submit: 'Password reset is not available yet. If you already have an account, try signing in. If this email is new, use Sign up.',
+                })}
+              >
                 Forgot your password?
               </button>
             </div>

@@ -34,9 +34,18 @@ import CanvasWelcomeTour from '../components/canvas/CanvasWelcomeTour';
 import DeliverablesView, { TEMPLATES as DELIVERABLE_TEMPLATES } from '../components/canvas/CanvasDeliverables';
 import { MOD } from '../components/canvas/platform';
 import '../styles/CanvasPage.css';
+import {
+  CANVAS_LAYOUT_KEY,
+  CANVAS_STATES_KEY,
+  CANVAS_DELIVERABLES_KEY,
+  CANVAS_TASK_STATUS_KEY,
+  canvasUserId,
+  readScopedJson,
+  writeScopedJson,
+  removeScoped,
+  clearCanvasLocalData,
+} from '../utils/canvasStorage';
 
-const LAYOUT_KEY = 'canvas-layout-v2';
-const STATES_KEY = 'canvas-states-v2';
 const VIEW_KEY = 'canvas-view-v2';
 
 function renderWidget(type, state, setState, openModal, allStates) {
@@ -149,14 +158,12 @@ const TASK_STATUSES = [
   { id: 'completed', label: 'Success', color: '#10B981', icon: 'check' },
   { id: 'abandoned', label: 'Abandoned', color: 'var(--canvas-text-4)', icon: 'x' },
 ];
-const TASK_STATUS_KEY = 'canvas-task-status-v1';
 const taskKey = (insId, idx) => `${insId}::${idx}`;
 
-function InsightsView({ widgetStates, setWidgetStates, layout, setLayout, onNavigateToChat, onShowWorkspace }) {
+function InsightsView({ widgetStates, setWidgetStates, layout, setLayout, onNavigateToChat, onShowWorkspace, userId }) {
   const [pinned, setPinned] = useState(() => new Set(INSIGHTS.filter(i => i.pinned).map(i => i.id)));
-  const [taskStatuses, setTaskStatuses] = useState(() => {
-    try { return JSON.parse(localStorage.getItem(TASK_STATUS_KEY) || '{}'); } catch { return {}; }
-  });
+  const [taskStatuses, setTaskStatuses] = useState(() => readScopedJson(CANVAS_TASK_STATUS_KEY, userId, {}) || {});
+  const [hydratedUserId, setHydratedUserId] = useState(userId);
   const [filter, setFilter] = useState('all');
   const [sortBy, setSortBy] = useState('confidence');
   const [expanded, setExpanded] = useState(new Set());
@@ -168,8 +175,14 @@ function InsightsView({ widgetStates, setWidgetStates, layout, setLayout, onNavi
   useEffect(() => { localStorage.setItem('canvas-insights-view', viewMode); }, [viewMode]);
 
   useEffect(() => {
-    localStorage.setItem(TASK_STATUS_KEY, JSON.stringify(taskStatuses));
-  }, [taskStatuses]);
+    setTaskStatuses(readScopedJson(CANVAS_TASK_STATUS_KEY, userId, {}) || {});
+    setHydratedUserId(userId);
+  }, [userId]);
+
+  useEffect(() => {
+    if (hydratedUserId !== userId) return;
+    writeScopedJson(CANVAS_TASK_STATUS_KEY, userId, taskStatuses);
+  }, [taskStatuses, userId, hydratedUserId]);
 
   const taskStatusOf = (insId, idx) => taskStatuses[taskKey(insId, idx)] || 'open';
   const setTaskStatus = (insId, idx, status) => {
@@ -567,7 +580,7 @@ function InsightsView({ widgetStates, setWidgetStates, layout, setLayout, onNavi
                 )}
 
                 <div className="insight-body">
-                  <div>{ins.summary}</div>
+                  {ins.summary ? <div>{ins.summary}</div> : null}
                   <ul className="insight-tasks">
                     {ins.bullets.map((b, idx) => {
                       const status = taskStatusOf(ins.id, idx);
@@ -626,10 +639,10 @@ function InsightsView({ widgetStates, setWidgetStates, layout, setLayout, onNavi
                   <button className="chip" onClick={() => askFollowUp(ins)} title="Open this insight in a new chat session">
                     <Icon name="message" size={11}/>Ask follow-up
                   </button>
-                  <button className="chip" onClick={() => sendToKanban(ins)} title="Add to Produce Board (Veg to try) on Workspace">
+                  <button className="chip" onClick={() => sendToKanban(ins)} title="Add to Produce Board (Veg to try) on Food Canvas">
                     <Icon name="task" size={11}/>Add to Produce Board
                   </button>
-                  <button className="chip" onClick={() => sendToGoals(ins)} title="Add to Goals on Workspace">
+                  <button className="chip" onClick={() => sendToGoals(ins)} title="Add to Goals on Food Canvas">
                     <Icon name="bullseye" size={11}/>Add to Goals
                   </button>
                   <button className="chip" onClick={() => toggleExpand(ins.id)}>
@@ -691,7 +704,7 @@ function PresetPicker({ onPick }) {
   );
 }
 
-function WorkspaceView({ openModal, layout, setLayout, widgetStates, setWidgetStates }) {
+function WorkspaceView({ openModal, layout, setLayout, widgetStates, setWidgetStates, userId }) {
   const [dragId, setDragId] = useState(null);
   const [dragOverId, setDragOverId] = useState(null);
 
@@ -754,8 +767,8 @@ function WorkspaceView({ openModal, layout, setLayout, widgetStates, setWidgetSt
     if (!window.confirm('Reset workspace? All widgets and content will be cleared.')) return;
     setLayout([]);
     setWidgetStates({});
-    localStorage.removeItem(LAYOUT_KEY);
-    localStorage.removeItem(STATES_KEY);
+    removeScoped(CANVAS_LAYOUT_KEY, userId);
+    removeScoped(CANVAS_STATES_KEY, userId);
   };
 
   return (
@@ -862,6 +875,8 @@ function ToastStack() {
 const CanvasPage = ({ user, authToken, onNavigateToHome, onNavigateToChat, onSignOut }) => {
   const { theme, toggleTheme } = useTheme();
   useAppConfig();
+  const userId = canvasUserId(user);
+  const [hydratedUserId, setHydratedUserId] = useState(userId);
   const [view, setView] = useState(() => localStorage.getItem(VIEW_KEY) || 'workspace');
   const [modal, setModal] = useState(null);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -871,21 +886,23 @@ const CanvasPage = ({ user, authToken, onNavigateToHome, onNavigateToChat, onSig
   const [showAccount, setShowAccount] = useState(false);
   const [showClearData, setShowClearData] = useState(false);
 
-  const [layout, setLayout] = useState(() => {
-    try {
-      const saved = localStorage.getItem(LAYOUT_KEY);
-      return saved ? JSON.parse(saved) : DEFAULT_LAYOUT;
-    } catch { return DEFAULT_LAYOUT; }
-  });
-  const [widgetStates, setWidgetStates] = useState(() => {
-    try {
-      const saved = localStorage.getItem(STATES_KEY);
-      return saved ? JSON.parse(saved) : {};
-    } catch { return {}; }
-  });
+  const [layout, setLayout] = useState(() => readScopedJson(CANVAS_LAYOUT_KEY, userId, DEFAULT_LAYOUT) || DEFAULT_LAYOUT);
+  const [widgetStates, setWidgetStates] = useState(() => readScopedJson(CANVAS_STATES_KEY, userId, {}) || {});
 
-  useEffect(() => { localStorage.setItem(LAYOUT_KEY, JSON.stringify(layout)); }, [layout]);
-  useEffect(() => { localStorage.setItem(STATES_KEY, JSON.stringify(widgetStates)); }, [widgetStates]);
+  useEffect(() => {
+    setLayout(readScopedJson(CANVAS_LAYOUT_KEY, userId, DEFAULT_LAYOUT) || DEFAULT_LAYOUT);
+    setWidgetStates(readScopedJson(CANVAS_STATES_KEY, userId, {}) || {});
+    setHydratedUserId(userId);
+  }, [userId]);
+
+  useEffect(() => {
+    if (hydratedUserId !== userId) return;
+    writeScopedJson(CANVAS_LAYOUT_KEY, userId, layout);
+  }, [layout, userId, hydratedUserId]);
+  useEffect(() => {
+    if (hydratedUserId !== userId) return;
+    writeScopedJson(CANVAS_STATES_KEY, userId, widgetStates);
+  }, [widgetStates, userId, hydratedUserId]);
   useEffect(() => { localStorage.setItem(VIEW_KEY, view); }, [view]);
 
   // Apply canvas theme attribute on body for scoped styling
@@ -990,7 +1007,7 @@ const CanvasPage = ({ user, authToken, onNavigateToHome, onNavigateToChat, onSig
   // Insights: list of sections — Daniel's feedback said sidebar should show sections here
   const insightSections = useMemo(() => {
     let taskMap = {};
-    try { taskMap = JSON.parse(localStorage.getItem(TASK_STATUS_KEY) || '{}'); } catch { /* ignore */ }
+    try { taskMap = readScopedJson(CANVAS_TASK_STATUS_KEY, userId, {}) || {}; } catch { /* ignore */ }
     return INSIGHTS.map(ins => {
       const states = ins.bullets.map((_, idx) => taskMap[taskKey(ins.id, idx)] || 'open');
       const done = states.filter(s => s === 'completed').length;
@@ -1010,7 +1027,7 @@ const CanvasPage = ({ user, authToken, onNavigateToHome, onNavigateToChat, onSig
   // Deliverables: list of projects with sections + history actions
   const deliverableProjects = useMemo(() => {
     try {
-      const dStore = JSON.parse(localStorage.getItem('canvas-deliverables-v2') || '{}');
+      const dStore = readScopedJson(CANVAS_DELIVERABLES_KEY, userId, {}) || {};
       const projects = Object.values(dStore.projects || {});
       return projects.map(p => {
         const t = DELIVERABLE_TEMPLATES.find(x => x.id === p.templateId);
@@ -1028,7 +1045,7 @@ const CanvasPage = ({ user, authToken, onNavigateToHome, onNavigateToChat, onSig
               if (p.id !== dStore.activeProjectId) {
                 // Open this project first; section scroll happens after a tick.
                 const next = { ...dStore, activeProjectId: p.id };
-                localStorage.setItem('canvas-deliverables-v2', JSON.stringify(next));
+                writeScopedJson(CANVAS_DELIVERABLES_KEY, userId, next);
                 window.dispatchEvent(new Event('storage'));
               }
               setTimeout(() => flashScrollTo(`#notion-section-${s.id}`), 80);
@@ -1036,7 +1053,7 @@ const CanvasPage = ({ user, authToken, onNavigateToHome, onNavigateToChat, onSig
           })),
           onOpen: () => {
             const next = { ...dStore, activeProjectId: p.id };
-            localStorage.setItem('canvas-deliverables-v2', JSON.stringify(next));
+            writeScopedJson(CANVAS_DELIVERABLES_KEY, userId, next);
             window.dispatchEvent(new Event('storage'));
           },
         };
@@ -1086,9 +1103,9 @@ const CanvasPage = ({ user, authToken, onNavigateToHome, onNavigateToChat, onSig
             </button>
           </AppHeader>
           <div className="canvas-content">
-            {view === 'insights' && <InsightsView widgetStates={widgetStates} setWidgetStates={setWidgetStates} layout={layout} setLayout={setLayout} onNavigateToChat={onNavigateToChat} onShowWorkspace={() => setView('workspace')}/>}
-            {view === 'workspace' && <WorkspaceView openModal={openModal} layout={layout} setLayout={setLayout} widgetStates={widgetStates} setWidgetStates={setWidgetStates}/>}
-            {view === 'deliverables' && <DeliverablesView allStates={widgetStates}/>}
+            {view === 'insights' && <InsightsView widgetStates={widgetStates} setWidgetStates={setWidgetStates} layout={layout} setLayout={setLayout} onNavigateToChat={onNavigateToChat} onShowWorkspace={() => setView('workspace')} userId={userId}/>}
+            {view === 'workspace' && <WorkspaceView openModal={openModal} layout={layout} setLayout={setLayout} widgetStates={widgetStates} setWidgetStates={setWidgetStates} userId={userId}/>}
+            {view === 'deliverables' && <DeliverablesView allStates={widgetStates} userId={userId}/>}
           </div>
         </div>
       </div>
@@ -1114,7 +1131,15 @@ const CanvasPage = ({ user, authToken, onNavigateToHome, onNavigateToChat, onSig
       {showClearData && (
         <ClearDataModal
           authToken={authToken}
+          userId={userId}
           onClose={() => setShowClearData(false)}
+          onDataCleared={({ canvas }) => {
+            if (canvas) {
+              clearCanvasLocalData(userId);
+              setLayout(DEFAULT_LAYOUT);
+              setWidgetStates({});
+            }
+          }}
         />
       )}
     </div>

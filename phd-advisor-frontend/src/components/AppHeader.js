@@ -71,7 +71,7 @@ const AppHeader = ({
         <div className="canvas-tabs chat-view-tabs">
           <button className={`tab ${isOnChat ? 'active' : ''}`} onClick={onNavigateToChat}>Chat</button>
           <button className={`tab ${tabActive('insights') ? 'active' : ''}`} onClick={() => goToCanvas('insights')} title="Food Canvas">Insights</button>
-          <button className={`tab ${tabActive('workspace') ? 'active' : ''}`} onClick={() => goToCanvas('workspace')} title="Food Canvas">Workspace</button>
+          <button className={`tab ${tabActive('workspace') ? 'active' : ''}`} onClick={() => goToCanvas('workspace')} title="Food Canvas">Food Canvas</button>
           <button className={`tab ${tabActive('deliverables') ? 'active' : ''}`} onClick={() => goToCanvas('deliverables')} title="Food Canvas">Documents</button>
         </div>
       )}
@@ -89,7 +89,7 @@ const AppHeader = ({
         >
           <option value="chat">Chat</option>
           <option value="insights">Insights</option>
-          <option value="workspace">Workspace</option>
+          <option value="workspace">Food Canvas</option>
           <option value="deliverables">Documents</option>
         </select>
       )}

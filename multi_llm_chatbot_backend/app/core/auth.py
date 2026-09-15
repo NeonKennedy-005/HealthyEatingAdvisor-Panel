@@ -1,4 +1,4 @@
-import os
+import logging
 from datetime import datetime, timedelta
 from typing import Optional
 from fastapi import HTTPException, Depends, status
@@ -7,8 +7,13 @@ from passlib.context import CryptContext
 from jose import JWTError, jwt
 from bson import ObjectId
 from app.core.database import get_database
-from app.models.user import User, UserResponse
+from app.models.user import User, UserResponse, normalize_email
 from app.config import get_settings
+
+logger = logging.getLogger(__name__)
+
+# bcrypt rejects secrets longer than 72 bytes; fail closed instead of 500.
+BCRYPT_MAX_BYTES = 72
 
 # Password hashing
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -22,12 +27,24 @@ ACCESS_TOKEN_EXPIRE_MINUTES = _cfg.token_expiry_minutes
 # Security scheme
 security = HTTPBearer()
 
+def _password_too_long(password: str) -> bool:
+    return len((password or "").encode("utf-8")) > BCRYPT_MAX_BYTES
+
+
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Verify a password against its hash"""
-    return pwd_context.verify(plain_password, hashed_password)
+    if _password_too_long(plain_password):
+        return False
+    try:
+        return pwd_context.verify(plain_password, hashed_password)
+    except Exception:
+        logger.exception("Password verification failed")
+        return False
 
 def get_password_hash(password: str) -> str:
     """Hash a password"""
+    if _password_too_long(password):
+        raise ValueError("Password is too long")
     return pwd_context.hash(password)
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
@@ -44,9 +61,9 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     return encoded_jwt
 
 async def get_user_by_email(email: str) -> Optional[User]:
-    """Get user by email from database"""
+    """Get user by email from database (case-insensitive)."""
     db = get_database()
-    user_data = await db.users.find_one({"email": email})
+    user_data = await db.users.find_one({"email": normalize_email(email)})
     if user_data:
         return User(**user_data)
     return None

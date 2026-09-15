@@ -8,7 +8,7 @@ const STEPS = [
   {
     title: 'Welcome to your Food Canvas',
     icon: 'flag',
-    body: 'Food Canvas is Insights, Workspace, and Documents next to Chat. Start with Food Resources, a Produce Board (Veg I like / Veg to try / Fruit I like / Fruit to try), a Shopping List, and Goals.',
+    body: 'Food Canvas is Insights, Food Canvas, and Documents next to Chat. Start with Food Resources, a Produce Board (Veg I like / Veg to try / Fruit I like / Fruit to try), a Shopping List, and Goals.',
   },
   {
     title: 'Add widgets from the palette',

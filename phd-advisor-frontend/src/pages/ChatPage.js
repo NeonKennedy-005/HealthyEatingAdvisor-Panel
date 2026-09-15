@@ -1178,6 +1178,7 @@ const handleNewChat = async (sessionId = null) => {
       {showClearData && (
         <ClearDataModal
           authToken={authToken}
+          userId={user?.id}
           onClose={() => setShowClearData(false)}
           onDataCleared={() => loadProfile()}
         />

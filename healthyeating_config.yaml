@@ -74,6 +74,7 @@ login:
 chat_page:
   placeholder: "Ask us anything about food!"
   examples:
+    # Titles: italic via UI. `**bold**` marks words Heidi added (render as bold-italic).
     - title: "Real Food"
       icon: "Leaf"
       color: "#059669"
@@ -82,12 +83,11 @@ chat_page:
         - "What is clean eating?"
         - "How can I get started eating more vegetables?"
         - "What can I pack for lunch?"
-    - title: "Let's learn about you"
+    - title: "Let's learn about you **Where do I start?**"
       icon: "ClipboardList"
       color: "#2563EB"
       bg_color: "#EFF6FF"
       suggestions:
-        - "Where do I start?"
         - "I know I'm not eating in a healthy way but I don't know what to do about it."
         - "Ask me why I want to improve my diet"
         - "Ask me what is worrying me the most about my diet"
@@ -96,11 +96,10 @@ chat_page:
       color: "#E11D48"
       bg_color: "#FFF1F2"
       suggestions:
-        - "What are the benefits of real food?"
-        - "How can I eat less sugar?"
+        - "What are the benefits of real food? How can I eat less sugar?"
         - "What's wrong with processed food?"
         - "Is clean eating really more enjoyable?"
-    - title: "Try New Foods"
+    - title: "**Try New Foods**"
       icon: "Carrot"
       color: "#EA580C"
       bg_color: "#FFF7ED"
@@ -113,10 +112,10 @@ chat_page:
       color: "#0F766E"
       bg_color: "#F0FDFA"
       suggestions:
-        - "How can I eat less sugar? What can I do with frozen fruit besides making a smoothie?"
-        - "What's a daikon radish? Can I roast vegetables on a baking sheet without buying expensive kitchen equipment?"
-        - "What can I do with frozen fruit? Instead of making a complicated omelet, can I just fry eggs and cook veg in the same pan?"
-    - title: "Superfood"
+        - "What can I do with frozen fruit besides making a smoothie?"
+        - "Can I roast vegetables on a baking sheet without buying expensive kitchen equipment?"
+        - "Instead of making a complicated omelet, can I just fry eggs and cook veg in the same pan?"
+    - title: "Superfood **More**"
       icon: "Sparkles"
       color: "#D97706"
       bg_color: "#FFFBEB"
