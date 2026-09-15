@@ -1,12 +1,14 @@
 from fastapi import APIRouter, HTTPException, Depends, status
 from datetime import datetime, timedelta
-from app.models.user import UserCreate, UserLogin, User, Token, UserResponse, UserUpdate
+from app.models.user import (
+    UserCreate, UserLogin, User, Token, UserResponse, UserUpdate,
+    GUEST_EMAIL_DOMAIN,
+)
 from pydantic import BaseModel, model_validator
 from typing import Optional
 from app.core.auth import (
     get_password_hash, 
     verify_password,
-    authenticate_user, 
     create_access_token, 
     get_user_by_email,
     get_current_active_user,
@@ -14,6 +16,7 @@ from app.core.auth import (
     ACCESS_TOKEN_EXPIRE_MINUTES
 )
 from app.core.database import get_database
+from pymongo.errors import DuplicateKeyError
 import logging
 import secrets
 import uuid
@@ -67,16 +70,28 @@ async def signup(user_data: UserCreate):
     try:
         db = get_database()
         
+        if str(user_data.email).endswith(GUEST_EMAIL_DOMAIN):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="That email is reserved for guest sessions. Use a different email, or sign in.",
+            )
+
         # Check if user already exists
         existing_user = await get_user_by_email(user_data.email)
         if existing_user:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Email already registered"
+                detail="This email is already registered. Sign in instead.",
             )
         
         # Create new user
-        hashed_password = get_password_hash(user_data.password)
+        try:
+            hashed_password = get_password_hash(user_data.password)
+        except ValueError:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Password is too long. Use 72 characters or fewer.",
+            )
         user = User(
             firstName=user_data.firstName,
             lastName=user_data.lastName,
@@ -123,6 +138,11 @@ async def signup(user_data: UserCreate):
         
     except HTTPException:
         raise
+    except DuplicateKeyError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="This email is already registered. Sign in instead.",
+        )
     except Exception as e:
         logger.error(f"Error during signup: {e}")
         raise HTTPException(
@@ -138,12 +158,23 @@ async def login(user_credentials: UserLogin):
     @return: Token containing a JWT access token and the authenticated UserResponse
     """
     try:
-        # Authenticate user
-        user = await authenticate_user(user_credentials.email, user_credentials.password)
+        user = await get_user_by_email(user_credentials.email)
         if not user:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Incorrect email or password",
+                detail="No account found for this email. Check for typos, or sign up.",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        if not verify_password(user_credentials.password, user.hashed_password):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Incorrect password for this email.",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        if not user.is_active:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="This account is inactive.",
                 headers={"WWW-Authenticate": "Bearer"},
             )
         

@@ -42,13 +42,13 @@ RUN apt-get update && \
 # HF Spaces runs the container as uid 1000 and expects the app to do the
 # same; with a non-root user we cannot bind privileged ports, but :7860 is
 # fine.
-RUN useradd -m -u 1000 user && mkdir -p /home/user/data && chown user:user /home/user/data
+RUN useradd -m -u 1000 user && mkdir -p /home/user/data /data && chown user:user /home/user/data /data
 USER user
 ENV HOME=/home/user \
     PATH=/home/user/.local/bin:$PATH \
     PYTHONUNBUFFERED=1 \
     CORS_ORIGINS=* \
-    DATA_DIR=/home/user/data \
+    DATA_DIR=/data \
     CONFIG_PATH=/home/user/app/healthyeating_config.yaml
 
 WORKDIR $HOME/app

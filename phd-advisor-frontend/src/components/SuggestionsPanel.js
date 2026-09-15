@@ -2,6 +2,27 @@
 import React from 'react';
 import { useAppConfig } from '../contexts/AppConfigContext';
 
+/** Render yaml titles: all italic via CSS; `**text**` is the added bold-italic span. */
+export function FormattedTitle({ title }) {
+  const nodes = [];
+  const re = /\*\*([^*]+)\*\*/g;
+  let last = 0;
+  let match;
+  let key = 0;
+  const text = title || '';
+  while ((match = re.exec(text)) !== null) {
+    if (match.index > last) {
+      nodes.push(text.slice(last, match.index));
+    }
+    nodes.push(<strong key={key++}>{match[1]}</strong>);
+    last = match.index + match[0].length;
+  }
+  if (last < text.length) {
+    nodes.push(text.slice(last));
+  }
+  return <>{nodes}</>;
+}
+
 const SuggestionsPanel = ({ onSuggestionClick }) => {
   const { config, resolveIcon } = useAppConfig();
 
@@ -35,7 +56,7 @@ const SuggestionsPanel = ({ onSuggestionClick }) => {
                   className="category-title"
                   style={{ color: category.color || '#6B7280' }}
                 >
-                  {category.title}
+                  <FormattedTitle title={category.title} />
                 </h3>
               </div>
               
@@ -43,7 +64,7 @@ const SuggestionsPanel = ({ onSuggestionClick }) => {
                 {(category.suggestions || []).map((suggestion, suggestionIndex) => (
                   <button
                     key={suggestionIndex}
-                    onClick={() => onSuggestionClick(suggestion)}
+                    onClick={() => onSuggestionClick(String(suggestion).replace(/\*\*([^*]+)\*\*/g, '$1'))}
                     className="suggestion-button"
                     style={{
                       borderColor: (category.color || '#6B7280') + '20',

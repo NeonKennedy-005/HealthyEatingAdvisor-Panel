@@ -231,10 +231,11 @@ def resolve_jwt_secret(explicit: str = "") -> str:
     if env_secret:
         return env_secret
 
-    data_dir = Path(os.environ.get("DATA_DIR") or Path.home() / "data")
-    secret_path = data_dir / "jwt_secret"
+    from app.core.paths import JWT_SECRET_FILENAME, resolve_data_dir
+
+    persist_dir = resolve_data_dir()
+    secret_path = persist_dir / JWT_SECRET_FILENAME
     try:
-        data_dir.mkdir(parents=True, exist_ok=True)
         if secret_path.is_file():
             stored = secret_path.read_text(encoding="utf-8").strip()
             if stored:

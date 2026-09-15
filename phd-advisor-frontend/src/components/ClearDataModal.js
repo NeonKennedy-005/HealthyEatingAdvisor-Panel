@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { Trash2, AlertTriangle, X, Loader2, CheckCircle } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
+import { getApiBaseUrl } from '../utils/authStorage';
+import { clearCanvasLocalData } from '../utils/canvasStorage';
 
-const ClearDataModal = ({ authToken, onClose, onDataCleared }) => {
+const ClearDataModal = ({ authToken, userId, onClose, onDataCleared }) => {
   const { isDark } = useTheme();
   const [profile, setProfile] = useState(false);
   const [chats, setChats] = useState(false);
@@ -16,7 +18,7 @@ const ClearDataModal = ({ authToken, onClose, onDataCleared }) => {
     if (noneSelected) return;
     setClearing(true);
     try {
-      const resp = await fetch(`${process.env.REACT_APP_API_URL}/api/users/me/clear-data`, {
+      const resp = await fetch(`${getApiBaseUrl()}/api/users/me/clear-data`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${authToken}`,
@@ -27,6 +29,9 @@ const ClearDataModal = ({ authToken, onClose, onDataCleared }) => {
       if (resp.ok) {
         const data = await resp.json();
         setResult(data.cleared);
+        if (canvas) {
+          clearCanvasLocalData(userId);
+        }
         if (onDataCleared) onDataCleared({ profile, chats, canvas });
       } else {
         setResult(['Error clearing data']);

@@ -52,7 +52,6 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
-import os
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, AsyncIterator, Mapping, Sequence
@@ -60,6 +59,8 @@ from typing import Any, AsyncIterator, Mapping, Sequence
 import aiosqlite
 from bson import ObjectId
 from pymongo.errors import DuplicateKeyError, PyMongoError
+
+from app.core.paths import DB_FILENAME, resolve_data_dir
 
 LOG = logging.getLogger(__name__)
 
@@ -88,23 +89,11 @@ _TABLE_NAMES = {t[0] for t in _TABLES}
 # ---------------------------------------------------------------------------
 
 def _data_dir() -> Path:
-    raw = os.environ.get("DATA_DIR") or "/data"
-    candidates = [Path(raw).expanduser()]
-    if str(candidates[0]) == "/data":
-        candidates.append(Path.home() / "data")
-    for p in candidates:
-        try:
-            p.mkdir(parents=True, exist_ok=True)
-            return p
-        except PermissionError:
-            LOG.warning("Cannot create data dir %s; trying fallback", p)
-    fallback = Path("/tmp/data")
-    fallback.mkdir(parents=True, exist_ok=True)
-    return fallback
+    return resolve_data_dir()
 
 
 def _db_path() -> Path:
-    return _data_dir() / "healthy_eating_panel.db"
+    return _data_dir() / DB_FILENAME
 
 
 # ---------------------------------------------------------------------------
@@ -471,9 +460,11 @@ class Collection:
                 row = await cur.fetchone()
                 return _loads(row[0]) if row else None
             if self._has_email and list(query.keys()) == ["email"]:
+                email = query["email"]
                 cur = await conn.execute(
-                    "SELECT doc FROM users WHERE email = ?",
-                    (query["email"],),
+                    "SELECT doc FROM users WHERE lower(email) = lower(?) "
+                    "ORDER BY CASE WHEN email = ? THEN 0 ELSE 1 END",
+                    (email, email),
                 )
                 row = await cur.fetchone()
                 return _loads(row[0]) if row else None
@@ -524,9 +515,11 @@ class Collection:
         if "_id" not in d or d["_id"] is None:
             d["_id"] = ObjectId()
         oid = d["_id"]
+        if self._has_email and d.get("email"):
+            d["email"] = str(d["email"]).strip().lower()
         try:
             conn = await _open()
-            email = d.get("email") if self._has_email else None
+            email = (d.get("email") or "").strip().lower() or None if self._has_email else None
             user_id = _id_str(d["user_id"]) if "user_id" in d else None
             sql, params = self._insert_params(_id_str(oid), email, user_id, _dumps(d))
             await conn.execute(sql, params)

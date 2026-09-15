@@ -76,7 +76,7 @@ Open the profile walkthrough from the settings or user menu.`,
 **Food Canvas** is the name for the three dashboard tabs next to Chat:
 
 - **Insights** — example healthy-eating goals you can mark as a Success (these starters are not generated from your chats)
-- **Workspace** — widgets you choose, including Food Resources, a produce board (Veg I like / Veg to try / Fruit I like / Fruit to try), a Shopping List, and Goals
+- **Food Canvas** — widgets you choose, including Food Resources, a produce board (Veg I like / Veg to try / Fruit I like / Fruit to try), a Shopping List, and Goals
 - **Documents** — longer drafts you can export as Markdown, HTML, or Print / PDF
 
 Open a document draft before using Export. Ask advisors in Chat, then park useful answers on Food Canvas.`,

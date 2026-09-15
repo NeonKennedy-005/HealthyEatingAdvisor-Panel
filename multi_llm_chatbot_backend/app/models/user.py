@@ -1,7 +1,15 @@
-from pydantic import BaseModel, EmailStr, Field, ConfigDict
+from pydantic import BaseModel, EmailStr, Field, ConfigDict, field_validator
 from typing import Optional, List, Any
 from datetime import datetime
 from bson import ObjectId
+
+GUEST_EMAIL_DOMAIN = "@guests.healthyeating.ai"
+
+
+def normalize_email(email: str) -> str:
+    """Strip and lowercase so login/signup match regardless of typing."""
+    return (email or "").strip().lower()
+
 
 class PyObjectId(ObjectId):
     @classmethod
@@ -31,9 +39,19 @@ class UserCreate(BaseModel):
     # Maps to profile.cyber_role — "Internship search" | "Full-time / entry-level" | etc.
     careerFocus: Optional[str] = None
 
+    @field_validator("email", mode="before")
+    @classmethod
+    def _normalize_email(cls, v):
+        return normalize_email(v) if isinstance(v, str) else v
+
 class UserLogin(BaseModel):
     email: EmailStr
     password: str
+
+    @field_validator("email", mode="before")
+    @classmethod
+    def _normalize_email(cls, v):
+        return normalize_email(v) if isinstance(v, str) else v
 
 class User(BaseModel):
     model_config = ConfigDict(
@@ -55,6 +73,11 @@ class User(BaseModel):
     is_active: bool = True
     is_guest: bool = False
 
+    @field_validator("email", mode="before")
+    @classmethod
+    def _normalize_email(cls, v):
+        return normalize_email(v) if isinstance(v, str) else v
+
 class UserUpdate(BaseModel):
     avatarId: Optional[str] = None
     firstName: Optional[str] = None
@@ -62,6 +85,11 @@ class UserUpdate(BaseModel):
     email: Optional[EmailStr] = None
     academicStage: Optional[str] = None
     researchArea: Optional[str] = None
+
+    @field_validator("email", mode="before")
+    @classmethod
+    def _normalize_email(cls, v):
+        return normalize_email(v) if isinstance(v, str) else v
 
 
 class UserResponse(BaseModel):

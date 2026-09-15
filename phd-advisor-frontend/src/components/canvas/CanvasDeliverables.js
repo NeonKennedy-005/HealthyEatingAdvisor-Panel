@@ -13,6 +13,7 @@ import 'katex/dist/katex.min.css';
 import Icon from './CanvasIcon';
 import { MOD } from './platform';
 import LatexEditor from './CanvasLatexEditor';
+import { CANVAS_DELIVERABLES_KEY, readScopedJson, writeScopedJson } from '../../utils/canvasStorage';
 
 // Markdown plugins shared across all rendered blocks. remark-math + rehype-katex
 // give us real LaTeX math (`$...$` inline, `$$...$$` block) inside any preview.
@@ -22,7 +23,6 @@ const REHYPE_PLUGINS = [rehypeKatex];
 const fireToast = (msg, kind = 'success') =>
   window.dispatchEvent(new CustomEvent('canvas-toast', { detail: { msg, kind } }));
 
-const STORE_KEY = 'canvas-deliverables-v2';
 const MAX_VERSIONS = 10;
 const newId = (p) => p + Math.random().toString(36).slice(2, 8);
 
@@ -264,9 +264,9 @@ const downloadFile = (filename, mime, contents) => {
 // ============================================================================
 // Project store — multi-project (was: single-template). Migrates v1 if found.
 // ============================================================================
-const loadStore = () => {
+const loadStore = (userId) => {
   try {
-    const v2 = JSON.parse(localStorage.getItem(STORE_KEY) || 'null');
+    const v2 = readScopedJson(CANVAS_DELIVERABLES_KEY, userId, null);
     if (v2) return v2;
     // Migrate v1: turn each templateId entry into a project.
     const v1 = JSON.parse(localStorage.getItem('canvas-deliverables-v1') || '{}');
@@ -296,9 +296,17 @@ const loadStore = () => {
 // ============================================================================
 // Main view
 // ============================================================================
-const DeliverablesView = ({ allStates }) => {
-  const [store, setStore] = useState(loadStore);
-  useEffect(() => { localStorage.setItem(STORE_KEY, JSON.stringify(store)); }, [store]);
+const DeliverablesView = ({ allStates, userId }) => {
+  const [store, setStore] = useState(() => loadStore(userId));
+  const [hydratedUserId, setHydratedUserId] = useState(userId);
+  useEffect(() => {
+    setStore(loadStore(userId));
+    setHydratedUserId(userId);
+  }, [userId]);
+  useEffect(() => {
+    if (hydratedUserId !== userId) return;
+    writeScopedJson(CANVAS_DELIVERABLES_KEY, userId, store);
+  }, [store, userId, hydratedUserId]);
 
   const project = store.projects[store.activeProjectId] || null;
   const template = project ? TEMPLATES.find(t => t.id === project.templateId) : null;

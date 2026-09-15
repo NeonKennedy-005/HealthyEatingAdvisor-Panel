@@ -1,6 +1,8 @@
 import React, { useState, useMemo, useRef } from 'react';
 import Icon from './CanvasIcon';
 import { WIDGET_CATALOG, CATEGORIES } from './canvasData';
+import { CANVAS_STATES_KEY, readScopedJson } from '../../utils/canvasStorage';
+import { readStoredAuth } from '../../utils/authStorage';
 
 const fireToast = (msg, kind = 'success') =>
   window.dispatchEvent(new CustomEvent('canvas-toast', { detail: { msg, kind } }));
@@ -153,7 +155,7 @@ export function AddTaskModal({ data, onClose }) {
       <div className="modal-head">
         <div className="modal-icon"><Icon name="kanban" size={18}/></div>
         <div style={{ flex: 1 }}>
-          <div className="modal-title">{editing ? 'Edit task' : 'Add task'}</div>
+          <div className="modal-title">{editing ? 'Edit fruit/veg' : 'Add fruit/veg'}</div>
           <div className="modal-sub">{editing ? '' : 'It\'ll be added to the column.'}</div>
         </div>
         <button className="icon-btn" onClick={onClose}><Icon name="x" size={16}/></button>
@@ -161,8 +163,8 @@ export function AddTaskModal({ data, onClose }) {
       <div className="modal-body">
         <div className="form-grid">
           <div className="form-row">
-            <label className="label">Task</label>
-            <input className="input" autoFocus value={title} onChange={e => setT(e.target.value)} placeholder="What needs doing?"/>
+            <label className="label">Fruit/Veg</label>
+            <input className="input" autoFocus value={title} onChange={e => setT(e.target.value)} placeholder="What fruit or veg?"/>
           </div>
           <div className="form-grid two">
             <div className="form-row">
@@ -188,7 +190,7 @@ export function AddTaskModal({ data, onClose }) {
       <div className="modal-foot">
         <button className="btn btn-ghost" onClick={onClose}>Cancel</button>
         <button className="btn btn-primary" onClick={submit} disabled={!title}>
-          <Icon name={editing ? 'check' : 'plus'} size={13}/>{editing ? 'Save changes' : 'Add task'}
+          <Icon name={editing ? 'check' : 'plus'} size={13}/>{editing ? 'Save changes' : 'Add fruit/veg'}
         </button>
       </div>
     </div>
@@ -520,7 +522,7 @@ export function NoteModal({ data, onClose }) {
   // Pull mention sources from the persisted canvas state so the modal stays self-contained.
   const mentionSources = useMemo(() => {
     try {
-      const all = JSON.parse(localStorage.getItem('canvas-states-v2') || '{}');
+      const all = readScopedJson(CANVAS_STATES_KEY, readStoredAuth()?.user?.id, {}) || {};
       const out = [];
       (all.bibliography?.entries || []).forEach(e => out.push({ key: '@' + e.key, label: e.title, kind: 'cite' }));
       (all.writing?.chapters || []).forEach(c => out.push({ key: '@' + c.name.replace(/\s+/g, '-'), label: c.name, kind: 'chapter' }));
@@ -1032,7 +1034,7 @@ export function CommandPaletteModal({ data, onClose }) {
         kind: 'add', label: 'Add: ' + w.name, icon: w.icon, sub: w.desc, action: () => data.onAddWidget(w),
       })),
       { kind: 'cmd', label: 'Switch to Insights', icon: 'insights', sub: 'View AI summaries', action: () => data.onSetView('insights') },
-      { kind: 'cmd', label: 'Switch to Workspace', icon: 'layout', sub: 'View dashboard', action: () => data.onSetView('workspace') },
+      { kind: 'cmd', label: 'Switch to Food Canvas', icon: 'layout', sub: 'View dashboard', action: () => data.onSetView('workspace') },
       { kind: 'cmd', label: 'Toggle theme', icon: 'star', sub: 'Dark / light', action: () => data.onToggleTheme() },
       { kind: 'cmd', label: 'Export workspace JSON', icon: 'download', sub: 'Download current layout', action: () => data.onExport() },
     ];

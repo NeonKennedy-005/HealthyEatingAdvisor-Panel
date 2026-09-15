@@ -901,7 +901,7 @@ export function GoalsWidget({ state, setState, openModal }) {
   return (
     <>
       <div style={{ fontSize: 12, color: 'var(--canvas-text-3)', marginBottom: 6 }}>
-        These will need to be Goals and not Tasks. Ideally no more than three goals at a time.
+        Ideally no more than three goals at a time.
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
         {active.map(g => (
@@ -913,7 +913,7 @@ export function GoalsWidget({ state, setState, openModal }) {
             {g.note && <div className="note-text" style={{ fontSize: 12, color: 'var(--canvas-text-2)' }}>{g.note}</div>}
             {g.due && <div className="note-meta"><span>due {g.due}</span></div>}
             <button className="btn" style={{ marginTop: 6, padding: '4px 9px', fontSize: 11 }} onClick={() => markSuccess(g)}>
-              <Icon name="check" size={11}/>Success
+              <Icon name="check" size={11}/>Add to Successes
             </button>
           </div>
         ))}
