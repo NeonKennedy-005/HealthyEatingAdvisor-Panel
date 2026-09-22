@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { Leaf, Pill, Dumbbell, HeartPulse, ArrowRight } from 'lucide-react';
+import { writeScopedItem, readScopedItem, SEARCH_PATH_KEY } from '../utils/canvasStorage';
 import './SearchPathGate.css';
 
-export const SEARCH_PATH_STORAGE_KEY = 'healthyEatingSearchPath';
+export const SEARCH_PATH_STORAGE_KEY = SEARCH_PATH_KEY;
 
 export const SEARCH_PATH_OPTIONS = [
   {
@@ -50,7 +51,7 @@ const KNOWN_PATHS = new Set([
  * First-run gate: healthy-eating focus steers advisor trajectory.
  * Shown once until a known focus is saved (profile or localStorage).
  */
-const SearchPathGate = ({ authToken, onComplete }) => {
+const SearchPathGate = ({ authToken, userId, onComplete }) => {
   const [selected, setSelected] = useState(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -76,7 +77,7 @@ const SearchPathGate = ({ authToken, onComplete }) => {
         throw new Error(data.detail || 'Could not save your choice');
       }
       const profile = await resp.json();
-      localStorage.setItem(SEARCH_PATH_STORAGE_KEY, selected);
+      writeScopedItem(SEARCH_PATH_KEY, userId, selected);
       onComplete?.(profile, selected);
     } catch (e) {
       setError(e.message || 'Could not save your choice');
@@ -126,7 +127,7 @@ const SearchPathGate = ({ authToken, onComplete }) => {
           type="button"
           className="search-path-skip"
           onClick={() => {
-            localStorage.setItem(SEARCH_PATH_STORAGE_KEY, 'Foods');
+            writeScopedItem(SEARCH_PATH_KEY, userId, 'Foods');
             onComplete?.(null, 'Foods');
           }}
           disabled={saving}
@@ -138,9 +139,9 @@ const SearchPathGate = ({ authToken, onComplete }) => {
   );
 };
 
-export function needsSearchPath(profile) {
+export function needsSearchPath(profile, userId) {
   try {
-    const stored = localStorage.getItem(SEARCH_PATH_STORAGE_KEY);
+    const stored = readScopedItem(SEARCH_PATH_KEY, userId);
     if (stored && KNOWN_PATHS.has(String(stored).toLowerCase())) {
       return false;
     }

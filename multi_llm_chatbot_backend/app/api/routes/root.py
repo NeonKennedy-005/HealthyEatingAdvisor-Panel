@@ -1,5 +1,6 @@
 from fastapi import APIRouter
 from app.config import get_settings
+from app.core.persistence import storage_status
 from app.core.secrets import normalize_secret
 from app.version import __version__
 
@@ -27,6 +28,7 @@ def root():
         "version": __version__,
         "llm_provider": settings.llm.provider,
         "openai_api_key_configured": openai_key_configured,
+        "storage": storage_status(),
         "features": [
             "Configurable Personas",
             "Improved Session Management",

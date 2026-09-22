@@ -268,27 +268,6 @@ const loadStore = (userId) => {
   try {
     const v2 = readScopedJson(CANVAS_DELIVERABLES_KEY, userId, null);
     if (v2) return v2;
-    // Migrate v1: turn each templateId entry into a project.
-    const v1 = JSON.parse(localStorage.getItem('canvas-deliverables-v1') || '{}');
-    if (v1 && v1.templates) {
-      const projects = {};
-      let activeId;
-      Object.entries(v1.templates).forEach(([tid, sec]) => {
-        const id = newId('p-');
-        const { _aiNotes, ...rest } = sec;
-        projects[id] = {
-          id,
-          name: TEMPLATES.find(t => t.id === tid)?.name || tid,
-          templateId: tid,
-          sections: rest,
-          versions: [],
-          aiNotes: _aiNotes || null,
-          createdAt: Date.now(),
-        };
-        if (tid === v1.activeTemplateId) activeId = id;
-      });
-      return { activeProjectId: activeId, projects };
-    }
   } catch { /* fallthrough */ }
   return { activeProjectId: null, projects: {} };
 };

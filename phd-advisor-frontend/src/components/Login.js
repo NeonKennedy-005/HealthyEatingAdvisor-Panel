@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Eye, EyeOff, Mail, Lock, ArrowRight } from 'lucide-react';
 import { useAppConfig } from '../contexts/AppConfigContext';
-import { persistAuth, getApiBaseUrl, formatApiDetail } from '../utils/authStorage';
+import { persistAuth, getApiBaseUrl, formatApiDetail, fetchStorageStatus } from '../utils/authStorage';
 import CopyrightNotice from './CopyrightNotice';
 import '../styles/Login.css';
 
@@ -16,6 +16,18 @@ const Login = ({ onNavigateToSignup, onNavigateToHome }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [isGuestLoading, setIsGuestLoading] = useState(false);
   const [errors, setErrors] = useState({});
+  const [storageHint, setStorageHint] = useState('');
+  const [unknownEmail, setUnknownEmail] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchStorageStatus().then((storage) => {
+      if (!cancelled && storage && storage.durable_storage === false && storage.hint) {
+        setStorageHint(storage.hint);
+      }
+    });
+    return () => { cancelled = true; };
+  }, []);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -77,6 +89,7 @@ const Login = ({ onNavigateToSignup, onNavigateToHome }) => {
     if (!validateForm()) return;
 
     setIsLoading(true);
+    setUnknownEmail(false);
 
     try {
       const response = await fetch(`${getApiBaseUrl()}/auth/login`, {
@@ -96,7 +109,9 @@ const Login = ({ onNavigateToSignup, onNavigateToHome }) => {
         persistAuth(data.user, data.access_token);
         onNavigateToHome?.(data.user, data.access_token);
       } else {
-        setErrors({ submit: formatApiDetail(data.detail, 'Login failed. Please try again.') });
+        const message = formatApiDetail(data.detail, 'Login failed. Please try again.');
+        setUnknownEmail(/no account found/i.test(message));
+        setErrors({ submit: message });
       }
 
     } catch (error) {
@@ -207,7 +222,20 @@ const Login = ({ onNavigateToSignup, onNavigateToHome }) => {
             {errors.submit && (
               <div className="submit-error">
                 {errors.submit}
+                {unknownEmail && (
+                  <button
+                    type="button"
+                    className="link-btn submit-error-action"
+                    onClick={onNavigateToSignup}
+                    disabled={busy}
+                  >
+                    Sign up with this email
+                  </button>
+                )}
               </div>
+            )}
+            {storageHint && !errors.submit && (
+              <div className="submit-error storage-hint">{storageHint}</div>
             )}
 
             <button

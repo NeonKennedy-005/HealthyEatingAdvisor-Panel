@@ -150,6 +150,12 @@ async def _open() -> aiosqlite.Connection:
     async with _open_lock:
         if _conn is not None:
             return _conn
+        try:
+            from app.core.persistence import maybe_restore_from_hub
+
+            maybe_restore_from_hub(_data_dir())
+        except Exception as exc:  # pragma: no cover - startup must not die
+            LOG.warning("Account Hub restore skipped: %s", exc)
         path = _db_path()
         try:
             conn = await aiosqlite.connect(str(path))
@@ -172,7 +178,8 @@ async def _open() -> aiosqlite.Connection:
             LOG.warning("PRAGMA journal_mode=WAL failed (%s); using rollback journal", exc)
 
         try:
-            await conn.execute("PRAGMA synchronous=NORMAL")
+            await conn.execute("PRAGMA synchronous=FULL")
+            await conn.execute("PRAGMA busy_timeout=5000")
             await conn.execute("PRAGMA foreign_keys=ON")
         except aiosqlite.OperationalError:
             pass
@@ -182,6 +189,34 @@ async def _open() -> aiosqlite.Connection:
         LOG.info("SQLite ready at %s", path)
         _conn = conn
         return _conn
+
+
+async def flush() -> None:
+    """Commit and checkpoint an already-open connection.
+
+    No-op when nothing has opened the DB yet so mocked auth unit tests
+    (which never call ``_open``) stay isolated from the filesystem.
+    """
+    if _conn is None:
+        return
+    await _conn.commit()
+    try:
+        await _conn.execute("PRAGMA wal_checkpoint(TRUNCATE)")
+    except aiosqlite.OperationalError:
+        pass
+
+
+async def reset_connection() -> None:
+    """Close the shared connection so tests can point DATA_DIR at a temp dir."""
+    global _database
+    await _close()
+    _database = None
+    try:
+        from app.core.persistence import reset_hub_restore_flag
+
+        reset_hub_restore_flag()
+    except Exception:
+        pass
 
 
 async def _init_schema(conn: aiosqlite.Connection) -> None:
@@ -704,5 +739,7 @@ def get_database() -> Database:
 __all__ = [
     "Collection",
     "Database",
+    "flush",
     "get_database",
+    "reset_connection",
 ]

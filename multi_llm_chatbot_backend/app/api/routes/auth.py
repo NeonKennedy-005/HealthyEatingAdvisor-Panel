@@ -16,6 +16,8 @@ from app.core.auth import (
     ACCESS_TOKEN_EXPIRE_MINUTES
 )
 from app.core.database import get_database
+from app.core.db import flush
+from app.core.persistence import account_missing_detail, schedule_account_backup
 from pymongo.errors import DuplicateKeyError
 import logging
 import secrets
@@ -122,6 +124,8 @@ async def signup(user_data: UserCreate):
             {"$set": profile_seed},
             upsert=True,
         )
+        await flush()
+        schedule_account_backup()
         
         # Create access token
         access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
@@ -162,7 +166,7 @@ async def login(user_credentials: UserLogin):
         if not user:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="No account found for this email. Check for typos, or sign up.",
+                detail=account_missing_detail(),
                 headers={"WWW-Authenticate": "Bearer"},
             )
         if not verify_password(user_credentials.password, user.hashed_password):
@@ -185,6 +189,9 @@ async def login(user_credentials: UserLogin):
             {"$set": {"last_login": datetime.utcnow()}}
         )
         user.last_login = datetime.utcnow()
+        await flush()
+        if not getattr(user, "is_guest", False):
+            schedule_account_backup()
         
         # Create access token
         access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
@@ -310,6 +317,8 @@ async def change_password(
             {"_id": current_user.id},
             {"$set": {"hashed_password": get_password_hash(body.new_password)}},
         )
+        await flush()
+        schedule_account_backup()
         return MessageResponse(message="Password changed successfully")
 
     except HTTPException:

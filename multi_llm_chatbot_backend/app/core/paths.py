@@ -59,6 +59,37 @@ def migrate_data_dir(src: Path, dest: Path) -> None:
             LOG.info("Migrated %s from %s to %s", name, src, dest)
 
 
+def _is_mount(path: Path) -> bool:
+    try:
+        if path.is_mount():
+            return True
+    except OSError:
+        pass
+    try:
+        mounts = Path("/proc/mounts").read_text(encoding="utf-8")
+    except OSError:
+        return False
+    resolved = str(path.resolve()) if path.exists() else str(path)
+    for line in mounts.splitlines():
+        parts = line.split()
+        if len(parts) >= 2 and parts[1] in {str(path), resolved}:
+            return True
+    return False
+
+
+def inspect_storage(path: Path | None = None) -> dict:
+    """Describe whether ``path`` looks like a durable HF ``/data`` mount."""
+    target = path if path is not None else resolve_data_dir()
+    writable = _writable(target)
+    mounted = _is_mount(target)
+    return {
+        "data_dir": str(target),
+        "data_dir_writable": writable,
+        "data_dir_is_mount": mounted,
+        "durable_storage": mounted,
+    }
+
+
 def resolve_data_dir() -> Path:
     """Return the directory that should hold the SQLite DB and JWT secret."""
     candidates = candidate_data_dirs()

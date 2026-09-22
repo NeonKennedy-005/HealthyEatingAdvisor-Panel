@@ -18,10 +18,16 @@ import ProfileWalkthrough from '../components/ProfileWalkthrough';
 import SearchPathGate, { needsSearchPath } from '../components/SearchPathGate';
 import ClearDataModal from '../components/ClearDataModal';
 import AccountModal from '../components/AccountModal';
-
-// Panel-specific key so prior single-advisor (e.g. Veggie-only) prefs don't stick.
-const ACTIVE_ADVISORS_STORAGE_KEY = 'healthyEatingActiveAdvisorIds';
-const LEGACY_ACTIVE_ADVISORS_STORAGE_KEY = 'muscleGrowthActiveAdvisorIds';
+import {
+  ACTIVE_ADVISORS_KEY,
+  LEGACY_ACTIVE_ADVISORS_KEY,
+  USER_AVATAR_KEY,
+  canvasUserId,
+  readScopedItem,
+  writeScopedItem,
+  readScopedJson,
+  writeScopedJson,
+} from '../utils/canvasStorage';
 
 const ChatPage = ({ user, authToken, onNavigateToHome, onNavigateToCanvas, onSignOut }) => {
   const { config, advisors, getAdvisorColors } = useAppConfig();
@@ -44,14 +50,15 @@ const ChatPage = ({ user, authToken, onNavigateToHome, onNavigateToCanvas, onSig
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [sidebarRefreshTrigger, setSidebarRefreshTrigger] = useState(0);
 
+  const userId = canvasUserId(user);
   const [userAvatarId, setUserAvatarId] = useState(
-    () => localStorage.getItem('userAvatarId') || (user?.avatarId ?? null)
+    () => readScopedItem(USER_AVATAR_KEY, userId) || (user?.avatarId ?? null)
   );
   const avatarOptions = config?.app?.user_avatars || [];
 
   const handleAvatarChange = async (id) => {
     setUserAvatarId(id);
-    localStorage.setItem('userAvatarId', id);
+    writeScopedItem(USER_AVATAR_KEY, userId, id);
     try {
       await fetch(`${process.env.REACT_APP_API_URL}/auth/me`, {
         method: 'PATCH',
@@ -81,12 +88,12 @@ const ChatPage = ({ user, authToken, onNavigateToHome, onNavigateToCanvas, onSig
         const profile = await resp.json();
         setUserProfile(profile);
         // Only show the focus gate once — needsSearchPath also honors localStorage
-        setShowSearchPathGate(needsSearchPath(profile));
+        setShowSearchPathGate(needsSearchPath(profile, userId));
       } else {
-        setShowSearchPathGate(needsSearchPath(null));
+        setShowSearchPathGate(needsSearchPath(null, userId));
       }
     } catch (e) {
-      setShowSearchPathGate(needsSearchPath(null));
+      setShowSearchPathGate(needsSearchPath(null, userId));
     } finally {
       setProfileLoaded(true);
     }
@@ -103,40 +110,23 @@ const ChatPage = ({ user, authToken, onNavigateToHome, onNavigateToCanvas, onSig
     const allIds = Object.keys(advisors || {});
     if (allIds.length === 0) return;
 
-    // Drop legacy key so Heidi's "Veggie Chef only" sticky default resets to all six.
     try {
-      localStorage.removeItem(LEGACY_ACTIVE_ADVISORS_STORAGE_KEY);
+      localStorage.removeItem(LEGACY_ACTIVE_ADVISORS_KEY);
     } catch {
       /* ignore */
     }
 
-    setActiveAdvisorIds((prev) => {
-      let next = prev.filter((id) => allIds.includes(id));
-      if (next.length === 0) {
-        try {
-          const stored = JSON.parse(localStorage.getItem(ACTIVE_ADVISORS_STORAGE_KEY) || 'null');
-          if (Array.isArray(stored)) {
-            const valid = stored.filter((id) => allIds.includes(id));
-            if (valid.length > 0) next = valid;
-          }
-        } catch {
-          /* ignore */
-        }
-      }
-      // Heidi Aug 18: default is all six (not Veggie Chef alone).
-      if (next.length === 0) next = [...allIds];
-      if (
-        prev.length === next.length &&
-        prev.every((id, index) => id === next[index])
-      ) {
-        return prev;
-      }
-      return next;
-    });
-  }, [advisors]);
+    const stored = readScopedJson(ACTIVE_ADVISORS_KEY, userId, null);
+    let next = [];
+    if (Array.isArray(stored)) {
+      next = stored.filter((id) => allIds.includes(id));
+    }
+    if (next.length === 0) next = [...allIds];
+    setActiveAdvisorIds(next);
+  }, [advisors, userId]);
 
   const persistActiveAdvisorIds = (ids) => {
-    localStorage.setItem(ACTIVE_ADVISORS_STORAGE_KEY, JSON.stringify(ids));
+    writeScopedJson(ACTIVE_ADVISORS_KEY, userId, ids);
   };
 
   const handleSetActiveAdvisors = (ids) => {
@@ -1158,6 +1148,7 @@ const handleNewChat = async (sessionId = null) => {
       {profileLoaded && showSearchPathGate && (
         <SearchPathGate
           authToken={authToken}
+          userId={userId}
           onComplete={(profile) => {
             if (profile) setUserProfile(profile);
             setShowSearchPathGate(false);

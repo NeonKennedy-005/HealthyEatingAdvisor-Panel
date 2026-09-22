@@ -12,6 +12,14 @@ import {
   clearStoredAuth,
   getApiBaseUrl,
 } from './utils/authStorage';
+import {
+  isolateIncomingSession,
+  prepareSignOut,
+  notifyIdentityChange,
+  writeScopedItem,
+  CANVAS_VIEW_KEY,
+  canvasUserId,
+} from './utils/canvasStorage';
 import './styles/components.css';
 
 function App() {
@@ -25,9 +33,13 @@ function App() {
   const [user, setUser] = useState(initialAuth?.user ?? null);
   const [authToken, setAuthToken] = useState(initialAuth?.token ?? null);
   const [authBootstrapping, setAuthBootstrapping] = useState(Boolean(initialAuth));
+  const userRef = useRef(user);
+  userRef.current = user;
 
   const clearAuthState = useCallback(() => {
+    prepareSignOut(userRef.current);
     clearStoredAuth();
+    notifyIdentityChange();
     setUser(null);
     setAuthToken(null);
     setIsAuthenticated(false);
@@ -93,7 +105,7 @@ function App() {
 
   const navigateToCanvas = (canvasView) => {
     if (['insights', 'workspace', 'deliverables'].includes(canvasView)) {
-      localStorage.setItem('canvas-view-v2', canvasView);
+      writeScopedItem(CANVAS_VIEW_KEY, canvasUserId(user), canvasView);
     }
     setCurrentView('canvas');
   };
@@ -107,7 +119,9 @@ function App() {
   };
 
   const handleAuthSuccess = (userData, token) => {
+    isolateIncomingSession();
     persistAuth(userData, token);
+    notifyIdentityChange();
     setUser(userData);
     setAuthToken(token);
     setIsAuthenticated(true);
