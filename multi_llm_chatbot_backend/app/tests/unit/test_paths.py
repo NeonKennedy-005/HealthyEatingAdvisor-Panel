@@ -4,7 +4,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from app.core.paths import DB_FILENAME, JWT_SECRET_FILENAME, migrate_data_dir, resolve_data_dir
+from app.core.paths import DB_FILENAME, JWT_SECRET_FILENAME, inspect_storage, migrate_data_dir, resolve_data_dir
 
 
 class TestResolveDataDir(unittest.TestCase):
@@ -52,3 +52,13 @@ class TestMigrateDataDir(unittest.TestCase):
             (dest / DB_FILENAME).write_text("new", encoding="utf-8")
             migrate_data_dir(src, dest)
             self.assertEqual((dest / DB_FILENAME).read_text(encoding="utf-8"), "new")
+
+
+class TestInspectStorage(unittest.TestCase):
+    def test_temp_dir_is_not_reported_as_a_mount(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            report = inspect_storage(Path(tmp))
+            self.assertEqual(report["data_dir"], tmp)
+            self.assertTrue(report["data_dir_writable"])
+            self.assertFalse(report["data_dir_is_mount"])
+            self.assertFalse(report["durable_storage"])

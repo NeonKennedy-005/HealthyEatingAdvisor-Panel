@@ -2,7 +2,7 @@
 import React from 'react';
 import { useAppConfig } from '../contexts/AppConfigContext';
 
-/** Render yaml titles: all italic via CSS; `**text**` is the added bold-italic span. */
+/** Render yaml titles; optional `**text**` still strips markdown. CSS makes titles bold, not italic. */
 export function FormattedTitle({ title }) {
   const nodes = [];
   const re = /\*\*([^*]+)\*\*/g;

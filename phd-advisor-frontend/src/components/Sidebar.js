@@ -19,6 +19,7 @@ import * as LucideIcons from 'lucide-react';
 import { useAppConfig } from '../contexts/AppConfigContext';
 import UserAvatarPicker from './UserAvatarPicker';
 import CopyrightNotice from './CopyrightNotice';
+import { canvasUserId, readScopedJson, writeScopedJson, SIDEBAR_EXPANDED_KEY } from '../utils/canvasStorage';
 import '../styles/Sidebar.css';
 
 const Sidebar = ({
@@ -51,13 +52,13 @@ const Sidebar = ({
   const avatarOptions = config?.app?.user_avatars || [];
   const currentAvatar = avatarOptions.find(a => a.id === userAvatarId);
   const AvatarIcon = currentAvatar ? (LucideIcons[currentAvatar.icon] || User) : User;
-  const [expanded, setExpanded] = useState(() => {
-    try { return JSON.parse(localStorage.getItem('sidebar-expanded-v1') || '{}'); } catch { return {}; }
-  });
+  const [expanded, setExpanded] = useState(() => (
+    readScopedJson(SIDEBAR_EXPANDED_KEY, canvasUserId(user), {}) || {}
+  ));
   const toggleExpanded = (key) => {
     setExpanded(prev => {
       const next = { ...prev, [key]: !prev[key] };
-      localStorage.setItem('sidebar-expanded-v1', JSON.stringify(next));
+      writeScopedJson(SIDEBAR_EXPANDED_KEY, canvasUserId(user), next);
       return next;
     });
   };

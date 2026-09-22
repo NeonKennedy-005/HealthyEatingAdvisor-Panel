@@ -1,5 +1,14 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import * as LucideIcons from 'lucide-react';
+import { readStoredAuth } from '../utils/authStorage';
+import {
+  AVATAR_OVERRIDES_KEY,
+  CUSTOM_AVATARS_KEY,
+  IDENTITY_EVENT,
+  canvasUserId,
+  readScopedJson,
+  writeScopedJson,
+} from '../utils/canvasStorage';
 
 const AppConfigContext = createContext(null);
 
@@ -75,20 +84,29 @@ export const useAppConfig = () => {
   return ctx;
 };
 
+const currentUserId = () => canvasUserId(readStoredAuth()?.user);
+
 export const AppConfigProvider = ({ children }) => {
   const [config, setConfig] = useState(null);
   const [personaItems, setPersonaItems] = useState([]);
   const [advisors, setAdvisors] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [avatarOverrides, setAvatarOverrides] = useState(() => {
-    try { return JSON.parse(localStorage.getItem('advisorAvatarOverrides') || '{}'); }
-    catch { return {}; }
-  });
-  const [myCustomAvatars, setMyCustomAvatars] = useState(() => {
-    try { return JSON.parse(localStorage.getItem('myCustomAvatars') || '[]'); }
-    catch { return []; }
-  });
+  const [avatarOverrides, setAvatarOverrides] = useState(() => (
+    readScopedJson(AVATAR_OVERRIDES_KEY, currentUserId(), {}) || {}
+  ));
+  const [myCustomAvatars, setMyCustomAvatars] = useState(() => (
+    readScopedJson(CUSTOM_AVATARS_KEY, currentUserId(), []) || []
+  ));
+
+  useEffect(() => {
+    const syncIdentity = () => {
+      setAvatarOverrides(readScopedJson(AVATAR_OVERRIDES_KEY, currentUserId(), {}) || {});
+      setMyCustomAvatars(readScopedJson(CUSTOM_AVATARS_KEY, currentUserId(), []) || []);
+    };
+    window.addEventListener(IDENTITY_EVENT, syncIdentity);
+    return () => window.removeEventListener(IDENTITY_EVENT, syncIdentity);
+  }, []);
 
   useEffect(() => {
     const fetchConfig = async () => {
@@ -115,14 +133,14 @@ export const AppConfigProvider = ({ children }) => {
   const setAdvisorAvatar = (advisorId, url) => {
     const next = { ...avatarOverrides, [advisorId]: url };
     setAvatarOverrides(next);
-    localStorage.setItem('advisorAvatarOverrides', JSON.stringify(next));
+    writeScopedJson(AVATAR_OVERRIDES_KEY, currentUserId(), next);
   };
 
   const addMyAvatar = (url) => {
     if (myCustomAvatars.includes(url)) return;
     const next = [url, ...myCustomAvatars];
     setMyCustomAvatars(next);
-    localStorage.setItem('myCustomAvatars', JSON.stringify(next));
+    writeScopedJson(CUSTOM_AVATARS_KEY, currentUserId(), next);
   };
 
   // Sync brand primary from config. Light theme uses the config color;

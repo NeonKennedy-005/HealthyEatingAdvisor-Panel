@@ -21,7 +21,7 @@ from app.api.routes.auth import (  # noqa: E402
     signup,
     update_profile,
 )
-from app.models.user import User, UserCreate, UserLogin  # noqa: E402
+from app.models.user import User, UserCreate, UserLogin, UserUpdate  # noqa: E402
 
 
 FAKE_USER_ID = ObjectId()
@@ -148,7 +148,7 @@ class TestUpdateProfile(unittest.TestCase):
         db.users.find_one = AsyncMock(return_value=updated_doc)
         mock_get_db.return_value = db
 
-        body = UpdateProfileRequest(first_name="Alice")
+        body = UserUpdate(firstName="Alice")
         result = asyncio.run(update_profile(body=body, current_user=user))
 
         db.users.update_one.assert_called_once_with(
@@ -168,7 +168,7 @@ class TestUpdateProfile(unittest.TestCase):
         db.users.find_one = AsyncMock(return_value=updated_doc)
         mock_get_db.return_value = db
 
-        body = UpdateProfileRequest(first_name="Alice", last_name="Smith")
+        body = UserUpdate(firstName="Alice", lastName="Smith")
         result = asyncio.run(update_profile(body=body, current_user=user))
 
         db.users.update_one.assert_called_once_with(
@@ -191,9 +191,7 @@ class TestUpdateProfile(unittest.TestCase):
         db.users.find_one = AsyncMock(return_value=updated_doc)
         mock_get_db.return_value = db
 
-        body = UpdateProfileRequest(first_name="  Alice  ")
-        self.assertEqual(body.first_name, "Alice")
-
+        body = UserUpdate(firstName="  Alice  ")
         asyncio.run(update_profile(body=body, current_user=user))
 
         db.users.update_one.assert_called_once_with(

@@ -65,6 +65,8 @@ Single Docker image from the root [`Dockerfile`](Dockerfile):
 2. Serves SPA from FastAPI on `:7860`.  
 3. Persists SQLite at `${DATA_DIR}/healthy_eating_panel.db`.
 
+**Accounts only survive Space rebuilds if Hugging Face Persistent storage is enabled** (Settings → Persistent Storage, mounted at `/data`). Without that mount, `/data` is a normal container directory and is wiped when the Space sleeps or rebuilds — Heidi’s `hboudro@earthlink.net` login then looks like “no account found.” Optional fallback: add an `HF_TOKEN` Space secret with write access so the app can mirror the SQLite DB to a private Hub dataset (`BrainForge/healthyeatingadvisor-accounts`). `GET /api/health` reports `storage.durable_storage` and a hint when persistence is missing.
+
 ### Required Space secrets
 
 | Secret | Purpose |
@@ -72,6 +74,7 @@ Single Docker image from the root [`Dockerfile`](Dockerfile):
 | `JWT_SECRET_KEY` | Signs auth tokens (long random string). |
 | `OPENAI_API_KEY` | Default OpenAI provider (`gpt-5.4-mini`). |
 | `GEMINI_API_KEY` | Optional — only if you switch `llm.provider` to `gemini`. |
+| `HF_TOKEN` | Optional — write token so accounts can be mirrored to a Hub dataset when `/data` is not a persistent mount. |
 
 ## Local deployment
 

@@ -74,7 +74,7 @@ login:
 chat_page:
   placeholder: "Ask us anything about food!"
   examples:
-    # Titles: italic via UI. `**bold**` marks words Heidi added (render as bold-italic).
+    # Titles render bold (not italic) to match the undergraduate advisor panel.
     - title: "Real Food"
       icon: "Leaf"
       color: "#059669"
@@ -83,7 +83,7 @@ chat_page:
         - "What is clean eating?"
         - "How can I get started eating more vegetables?"
         - "What can I pack for lunch?"
-    - title: "Let's learn about you **Where do I start?**"
+    - title: "Where do I start?"
       icon: "ClipboardList"
       color: "#2563EB"
       bg_color: "#EFF6FF"
@@ -96,10 +96,10 @@ chat_page:
       color: "#E11D48"
       bg_color: "#FFF1F2"
       suggestions:
-        - "What are the benefits of real food? How can I eat less sugar?"
+        - "How can I eat less sugar?"
         - "What's wrong with processed food?"
         - "Is clean eating really more enjoyable?"
-    - title: "**Try New Foods**"
+    - title: "Try New Foods"
       icon: "Carrot"
       color: "#EA580C"
       bg_color: "#FFF7ED"
@@ -115,7 +115,7 @@ chat_page:
         - "What can I do with frozen fruit besides making a smoothie?"
         - "Can I roast vegetables on a baking sheet without buying expensive kitchen equipment?"
         - "Instead of making a complicated omelet, can I just fry eggs and cook veg in the same pan?"
-    - title: "Superfood **More**"
+    - title: "More"
       icon: "Sparkles"
       color: "#D97706"
       bg_color: "#FFFBEB"

@@ -1,8 +1,7 @@
 ﻿import React, { useState, useEffect } from 'react';
 import Icon from './CanvasIcon';
 import { MOD } from './platform';
-
-const TOUR_KEY = 'canvas-tour-seen-launchpad-v1';
+import { CANVAS_TOUR_KEY, readScopedItem, writeScopedItem } from '../../utils/canvasStorage';
 
 const STEPS = [
   {
@@ -27,17 +26,17 @@ const STEPS = [
   },
 ];
 
-const CanvasWelcomeTour = ({ forceShow = false, onClose }) => {
+const CanvasWelcomeTour = ({ forceShow = false, onClose, userId }) => {
   const [step, setStep] = useState(0);
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    const seen = localStorage.getItem(TOUR_KEY);
+    const seen = readScopedItem(CANVAS_TOUR_KEY, userId);
     if (forceShow || !seen) setVisible(true);
-  }, [forceShow]);
+  }, [forceShow, userId]);
 
   const dismiss = () => {
-    localStorage.setItem(TOUR_KEY, '1');
+    writeScopedItem(CANVAS_TOUR_KEY, userId, '1');
     setVisible(false);
     if (onClose) onClose();
   };

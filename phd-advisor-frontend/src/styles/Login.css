@@ -280,6 +280,16 @@
   text-align: center;
 }
 
+.submit-error-action {
+  display: block;
+  margin: 10px auto 0;
+}
+
+.submit-error.storage-hint {
+  font-weight: 400;
+  font-size: 13px;
+}
+
 /* Submit Button */
 .submit-btn {
   width: 100%;

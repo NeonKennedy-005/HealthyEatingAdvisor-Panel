@@ -25,3 +25,6 @@ phd-advisor-frontend/firebase.json
 # Python virtual environments
 **/venv/
 .venv/
+
+# Local SQLite / Chroma / JWT (never commit)
+multi_llm_chatbot_backend/local_data/

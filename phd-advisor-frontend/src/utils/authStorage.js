@@ -30,6 +30,17 @@ export function getApiBaseUrl() {
   return process.env.REACT_APP_API_URL || '';
 }
 
+export async function fetchStorageStatus() {
+  try {
+    const response = await fetch(`${getApiBaseUrl()}/api/health`);
+    if (!response.ok) return null;
+    const data = await response.json();
+    return data.storage || null;
+  } catch {
+    return null;
+  }
+}
+
 /** FastAPI may return detail as a string or a list of validation objects. */
 export function formatApiDetail(detail, fallback = 'Something went wrong. Please try again.') {
   if (detail == null || detail === '') return fallback;

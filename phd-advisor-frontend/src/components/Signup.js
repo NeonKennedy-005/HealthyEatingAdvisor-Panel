@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Eye, EyeOff, Mail, Lock, User, ArrowRight, Shield, Globe } from 'lucide-react';
 import { useAppConfig } from '../contexts/AppConfigContext';
-import { persistAuth, getApiBaseUrl, formatApiDetail } from '../utils/authStorage';
+import { persistAuth, getApiBaseUrl, formatApiDetail, fetchStorageStatus } from '../utils/authStorage';
 import '../styles/Signup.css';
 
 const Signup = ({ onNavigateToLogin, onNavigateToHome }) => {
@@ -21,6 +21,17 @@ const Signup = ({ onNavigateToLogin, onNavigateToHome }) => {
   });
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState({});
+  const [storageHint, setStorageHint] = useState('');
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchStorageStatus().then((storage) => {
+      if (!cancelled && storage && storage.durable_storage === false && storage.hint) {
+        setStorageHint(storage.hint);
+      }
+    });
+    return () => { cancelled = true; };
+  }, []);
 
   const knowledgeLevels = config?.login?.knowledge_levels?.length
     ? config.login.knowledge_levels
@@ -388,6 +399,9 @@ const Signup = ({ onNavigateToLogin, onNavigateToHome }) => {
               <div className="submit-error">
                 {errors.submit}
               </div>
+            )}
+            {storageHint && !errors.submit && (
+              <div className="submit-error storage-hint">{storageHint}</div>
             )}
 
             {/* Submit Button */}

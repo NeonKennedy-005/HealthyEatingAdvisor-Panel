@@ -39,14 +39,16 @@ import {
   CANVAS_STATES_KEY,
   CANVAS_DELIVERABLES_KEY,
   CANVAS_TASK_STATUS_KEY,
+  CANVAS_VIEW_KEY,
+  CANVAS_INSIGHTS_VIEW_KEY,
   canvasUserId,
   readScopedJson,
   writeScopedJson,
+  readScopedItem,
+  writeScopedItem,
   removeScoped,
   clearCanvasLocalData,
 } from '../utils/canvasStorage';
-
-const VIEW_KEY = 'canvas-view-v2';
 
 function renderWidget(type, state, setState, openModal, allStates) {
   const props = { state, setState, openModal, allStates };
@@ -171,8 +173,13 @@ function InsightsView({ widgetStates, setWidgetStates, layout, setLayout, onNavi
   const [openStatusMenu, setOpenStatusMenu] = useState(null);
   // 'cards' = current cards-of-tasks layout, 'tasks' = flat task list per Daniel's
   // "Sections in sidebar, Tasks in the main view" suggestion.
-  const [viewMode, setViewMode] = useState(() => localStorage.getItem('canvas-insights-view') || 'cards');
-  useEffect(() => { localStorage.setItem('canvas-insights-view', viewMode); }, [viewMode]);
+  const [viewMode, setViewMode] = useState(() => readScopedItem(CANVAS_INSIGHTS_VIEW_KEY, userId) || 'cards');
+  useEffect(() => {
+    setViewMode(readScopedItem(CANVAS_INSIGHTS_VIEW_KEY, userId) || 'cards');
+  }, [userId]);
+  useEffect(() => {
+    writeScopedItem(CANVAS_INSIGHTS_VIEW_KEY, userId, viewMode);
+  }, [viewMode, userId]);
 
   useEffect(() => {
     setTaskStatuses(readScopedJson(CANVAS_TASK_STATUS_KEY, userId, {}) || {});
@@ -877,7 +884,7 @@ const CanvasPage = ({ user, authToken, onNavigateToHome, onNavigateToChat, onSig
   useAppConfig();
   const userId = canvasUserId(user);
   const [hydratedUserId, setHydratedUserId] = useState(userId);
-  const [view, setView] = useState(() => localStorage.getItem(VIEW_KEY) || 'workspace');
+  const [view, setView] = useState(() => readScopedItem(CANVAS_VIEW_KEY, userId) || 'workspace');
   const [modal, setModal] = useState(null);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -892,6 +899,7 @@ const CanvasPage = ({ user, authToken, onNavigateToHome, onNavigateToChat, onSig
   useEffect(() => {
     setLayout(readScopedJson(CANVAS_LAYOUT_KEY, userId, DEFAULT_LAYOUT) || DEFAULT_LAYOUT);
     setWidgetStates(readScopedJson(CANVAS_STATES_KEY, userId, {}) || {});
+    setView(readScopedItem(CANVAS_VIEW_KEY, userId) || 'workspace');
     setHydratedUserId(userId);
   }, [userId]);
 
@@ -903,7 +911,9 @@ const CanvasPage = ({ user, authToken, onNavigateToHome, onNavigateToChat, onSig
     if (hydratedUserId !== userId) return;
     writeScopedJson(CANVAS_STATES_KEY, userId, widgetStates);
   }, [widgetStates, userId, hydratedUserId]);
-  useEffect(() => { localStorage.setItem(VIEW_KEY, view); }, [view]);
+  useEffect(() => {
+    writeScopedItem(CANVAS_VIEW_KEY, userId, view);
+  }, [view, userId]);
 
   // Apply canvas theme attribute on body for scoped styling
   useEffect(() => {
@@ -1111,7 +1121,7 @@ const CanvasPage = ({ user, authToken, onNavigateToHome, onNavigateToChat, onSig
       </div>
       <ModalRouter modal={modal} onClose={closeModal}/>
       <ToastStack/>
-      <CanvasWelcomeTour key={tourForceShow} forceShow={tourForceShow > 0}/>
+      <CanvasWelcomeTour key={tourForceShow} forceShow={tourForceShow > 0} userId={userId}/>
       <ShortcutHint/>
       {showProfileForm && (
         <ProfileWalkthrough
