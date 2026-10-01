@@ -15,7 +15,7 @@ import '../styles/EnhancedChatInput.css';
 import AdvisorCarousel from '../components/AdvisorCarousel';
 import OnboardingChat from '../components/OnboardingChat';
 import ProfileWalkthrough from '../components/ProfileWalkthrough';
-import SearchPathGate, { needsSearchPath } from '../components/SearchPathGate';
+import { persistFoodTrack } from '../components/SearchPathGate';
 import ClearDataModal from '../components/ClearDataModal';
 import AccountModal from '../components/AccountModal';
 import {
@@ -75,11 +75,10 @@ const ChatPage = ({ user, authToken, onNavigateToHome, onNavigateToCanvas, onSig
   const [showClearData, setShowClearData] = useState(false);
   const [showAccount, setShowAccount] = useState(false);
   const [userProfile, setUserProfile] = useState(null);
-  const [profileLoaded, setProfileLoaded] = useState(false);
-  const [showSearchPathGate, setShowSearchPathGate] = useState(false);
   const [synthesizedMode, setSynthesizedMode] = useState(false);
 
   const loadProfile = async () => {
+    persistFoodTrack(userId);
     try {
       const resp = await fetch(`${process.env.REACT_APP_API_URL}/api/users/me/profile`, {
         headers: { Authorization: `Bearer ${authToken}` },
@@ -87,21 +86,14 @@ const ChatPage = ({ user, authToken, onNavigateToHome, onNavigateToCanvas, onSig
       if (resp.ok) {
         const profile = await resp.json();
         setUserProfile(profile);
-        // Only show the focus gate once — needsSearchPath also honors localStorage
-        setShowSearchPathGate(needsSearchPath(profile, userId));
-      } else {
-        setShowSearchPathGate(needsSearchPath(null, userId));
       }
     } catch (e) {
-      setShowSearchPathGate(needsSearchPath(null, userId));
-    } finally {
-      setProfileLoaded(true);
+      /* profile is optional for guests */
     }
   };
 
   useEffect(() => {
     if (authToken) {
-      setProfileLoaded(false);
       loadProfile();
     }
   }, [authToken]);
@@ -889,7 +881,6 @@ const handleNewChat = async (sessionId = null) => {
   }, [messages]);
 
   const handleInputSubmit = async (inputMessage) => {
-  if (showSearchPathGate) return;
   if (replyingTo) {
     // This is a reply to a specific message
     await handleReplyToAdvisor(inputMessage, replyingTo);
@@ -1120,15 +1111,13 @@ const handleNewChat = async (sessionId = null) => {
               onSendMessage={handleInputSubmit}
               onFileUploaded={handleFileUploaded}
               uploadedDocuments={uploadedDocuments}
-              isLoading={isLoading || showSearchPathGate}
+              isLoading={isLoading}
               currentChatSessionId={currentSessionId}
               authToken={authToken}
               synthesizedMode={synthesizedMode}
               onToggleSynthesized={() => setSynthesizedMode((prev) => !prev)}
               placeholder={
-                showSearchPathGate
-                  ? 'Choose a focus above to start…'
-                  : replyingTo 
+                replyingTo 
                   ? `Reply to ${replyingTo.advisorName}...`
                   : chatPlaceholder
               }
@@ -1142,17 +1131,6 @@ const handleNewChat = async (sessionId = null) => {
           authToken={authToken}
           existingProfile={userProfile}
           onClose={() => { setShowProfileForm(false); loadProfile(); }}
-        />
-      )}
-
-      {profileLoaded && showSearchPathGate && (
-        <SearchPathGate
-          authToken={authToken}
-          userId={userId}
-          onComplete={(profile) => {
-            if (profile) setUserProfile(profile);
-            setShowSearchPathGate(false);
-          }}
         />
       )}
 
