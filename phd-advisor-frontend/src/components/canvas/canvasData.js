@@ -290,10 +290,11 @@ export const EMPTY_STATE = {
   'devils-advocate': { claim: '', counters: [] },
   'scope-realism': {
     target: '',
-    score: 0,
-    label: 'Set a target',
+    score: null,
+    label: '',
     factors: [],
     notes: '',
+    actions: [],
   },
   outline: { items: [], expanded: {} },
   highlights: { items: [] },
