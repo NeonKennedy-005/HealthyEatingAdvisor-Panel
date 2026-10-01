@@ -111,7 +111,14 @@ function CanvasWidget({ widget, isDragging, isDragOver, onDragStart, onDragOver,
           <button className="icon-btn" onClick={() => onRemove(widget.id, meta.name)} title="Remove"><Icon name="trash" size={13}/></button>
         </div>
       </div>
-      <div className="widget-body">
+      <div
+        className="widget-body"
+        onPointerDown={(e) => {
+          if (e.target.closest('input, textarea, select, button, a, label, .critic-form')) {
+            e.stopPropagation();
+          }
+        }}
+      >
         {renderWidget(widget.type, state, setState, openModal, allStates)}
       </div>
     </div>
